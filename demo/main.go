@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/devopsmi/rad/cmd/api"
+	"github.com/devopsmi/rad/api"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 )

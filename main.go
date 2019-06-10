@@ -12,6 +12,8 @@ import (
 	"text/template"
 
 	_ "github.com/denisenkom/go-mssqldb"
+	"github.com/devopsmi/rad/dbmeta"
+	gtmpl "github.com/devopsmi/rad/template"
 	"github.com/droundy/goopt"
 	"github.com/jimsmart/schema"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -19,8 +21,6 @@ import (
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/serenize/snaker"
-	"github.com/devopsmi/rad/dbmeta"
-	gtmpl "github.com/devopsmi/rad/template"
 )
 
 var (
@@ -85,7 +85,7 @@ func main() {
 	}
 	// if packageName is not set we need to default it
 	if packageName == nil || *packageName == "" {
-		*packageName = "generated"
+		*packageName = "github.com/devopsmi/rad"
 	}
 	os.Mkdir("model", 0777)
 
