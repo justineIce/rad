@@ -25,7 +25,7 @@ gen is based/inspired by the work of Seth Shelnutt's [db2struct](https://github.
 go get github.com/devopsmi/rad
 gen --connstr "root@tcp(127.0.0.1:3306)/employees?&parseTime=True" --database employees  --json --gorm --guregu --rest
 
-go run main.go --connstr "cox:tqojg&WIGggN89bm@tcp(192.168.2.140:3306)/sso?&parseTime=True" --database sso  --json --gorm --guregu --rest
+go run main.go --connstr "cox:tqojg&WIGggN89bm@tcp(192.168.2.140:3306)/sso?&parseTime=True" --package sso --database sso  --json --gorm --guregu --rest
 ```
 
 ## Supported Databases
