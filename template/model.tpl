@@ -1,11 +1,8 @@
-package template
-
-var ModelTmpl = `package {{.PackageName}}
+package {{.PackageName}}
 
 import (
     "database/sql"
     "time"
-
     "github.com/guregu/null"
 )
 
@@ -15,7 +12,7 @@ var (
     _ = null.Bool{}
 )
 
-
+//{{.TableName}} - {{.TableRemark}}
 type {{.StructName}} struct {
     {{range .Fields}}{{.}}
     {{end}}
@@ -25,4 +22,3 @@ type {{.StructName}} struct {
 func ({{.ShortStructName}} *{{.StructName}}) TableName() string {
 	return "{{.TableName}}"
 }
-`

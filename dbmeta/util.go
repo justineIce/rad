@@ -28,6 +28,11 @@ func FmtFieldName(s string) string {
 	return string(runes)
 }
 
+func FmtFieldName2(s string) string {
+	str := FmtFieldName(s)
+	return strings.ToLower(str[:1]) + str[1:]
+}
+
 func lintFieldName(name string) string {
 	// Fast path for simple cases: "_" and all lowercase.
 	if name == "_" {

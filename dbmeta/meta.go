@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jimsmart/schema"
 )
@@ -13,7 +14,9 @@ type ModelInfo struct {
 	StructName      string
 	ShortStructName string
 	TableName       string
+	TableRemark     string
 	Fields          []string
+	PrimaryKey      []string
 }
 
 // commonInitialisms is a set of common initialisms.
@@ -84,32 +87,126 @@ const (
 	golangTime       = "time.Time"
 )
 
-// GenerateStruct generates a struct for the given table.
-func GenerateStruct(db *sql.DB, tableName string, structName string, pkgName string, jsonAnnotation bool, gormAnnotation bool, gureguTypes bool) *ModelInfo {
-	cols, _ := schema.Table(db, tableName)
-	fields := generateFieldsTypes(db, cols, 0, jsonAnnotation, gormAnnotation, gureguTypes)
+func GetTableRemark(db *sql.DB, dbName, tableName string) (remark string, err error) {
+	var data []map[string]interface{}
+	data, err = Query(db, fmt.Sprintf("SELECT TABLE_COMMENT FROM information_schema.TABLES WHERE TABLE_NAME='%s' AND table_schema='%s'", tableName, dbName))
+	if err != nil {
+		return
+	}
+	if len(data) > 0 {
+		remark = data[0]["TABLE_COMMENT"].(string)
+	}
+	return
+}
+func GetTablePrimaryKey(db *sql.DB, dbName, tableName string) (primaryKey []string, err error) {
+	var data []map[string]interface{}
+	data, err = Query(db, fmt.Sprintf("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.`KEY_COLUMN_USAGE` WHERE table_name='%s'  AND table_schema='%s' AND constraint_name='PRIMARY'", tableName, dbName))
+	if err != nil {
+		return
+	}
+	if len(data) > 0 {
+		for _, value := range data {
+			primaryKey = append(primaryKey, value["COLUMN_NAME"].(string))
+		}
+	}
+	return
+}
+func GetTableColumnRemark(db *sql.DB, dbName, tableName string) (remark map[string]string, err error) {
+	var data []map[string]interface{}
+	data, err = Query(db, fmt.Sprintf("SELECT COLUMN_NAME,column_comment FROM INFORMATION_SCHEMA.Columns WHERE TABLE_NAME='%s' AND table_schema='%s'", tableName, dbName))
+	if err != nil {
+		return
+	}
+	if len(data) > 0 {
+		//var cols []map[string]interface{}
+		remark = make(map[string]string)
+		for _, value := range data {
+			name := value["COLUMN_NAME"]
+			comment := value["column_comment"]
+			remark[fmt.Sprintf("%v", name)] = fmt.Sprintf("%v", comment)
+		}
+	}
+	return
+}
 
-	//fields := generateMysqlTypes(db, columnTypes, 0, jsonAnnotation, gormAnnotation, gureguTypes)
+func Query(db *sql.DB, queryStr string, args ...interface{}) ([]map[string]interface{}, error) {
+	rows, err := db.Query(queryStr, args...)
+	defer func() {
+		if rows != nil {
+			rows.Close()
+		}
+	}()
+	if err != nil {
+		return nil, err
+	}
+	columns, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	values := make([]interface{}, len(columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+	list := []map[string]interface{}{}
+	// 这里需要初始化为空数组，否则在查询结果为空的时候，返回的会是一个未初始化的指针
+	for rows.Next() {
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			return nil, err
+		}
+
+		ret := make(map[string]interface{})
+		for i, col := range values {
+			if col == nil {
+				ret[columns[i]] = nil
+			} else {
+				switch val := (*scanArgs[i].(*interface{})).(type) {
+				case []byte:
+					ret[columns[i]] = string(val)
+					break
+				case time.Time:
+					ret[columns[i]] = val.Format("2006-01-02 15:04:05")
+					break
+				default:
+					ret[columns[i]] = val
+				}
+			}
+		}
+		list = append(list, ret)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return list, nil
+}
+
+// GenerateStruct generates a struct for the given table.
+func GenerateStruct(db *sql.DB, dbName string, tableName string, structName string, pkgName string, jsonAnnotation bool, gormAnnotation bool, gureguTypes bool) *ModelInfo {
+	cols, _ := schema.Table(db, tableName)
+	colRemark, _ := GetTableColumnRemark(db, dbName, tableName)
+	tableRemark, _ := GetTableRemark(db, dbName, tableName)
+	primaryKey, _ := GetTablePrimaryKey(db, dbName, tableName)
+	fields := generateFieldsTypes(cols, colRemark, primaryKey, 0, jsonAnnotation, gormAnnotation, gureguTypes)
 
 	var modelInfo = &ModelInfo{
 		PackageName:     pkgName,
 		StructName:      structName,
 		TableName:       tableName,
+		TableRemark:     tableRemark,
 		ShortStructName: strings.ToLower(string(structName[0])),
 		Fields:          fields,
+		PrimaryKey:      primaryKey,
 	}
 
 	return modelInfo
 }
 
 // Generate fields string
-func generateFieldsTypes(db *sql.DB, columns []*sql.ColumnType, depth int, jsonAnnotation bool, gormAnnotation bool, gureguTypes bool) []string {
-
-	//sort.Strings(keys)
-
-	var fields []string
+func generateFieldsTypes(columns []*sql.ColumnType, colRemark map[string]string, primaryKey []string, depth int, jsonAnnotation bool,
+	gormAnnotation bool, gureguTypes bool) (fields []string) {
 	var field = ""
-	for i, c := range columns {
+	for _, c := range columns {
 		nullable, _ := c.Nullable()
 		key := c.Name()
 		valueType := sqlTypeToGoType(strings.ToLower(c.DatabaseTypeName()), nullable, gureguTypes)
@@ -120,12 +217,11 @@ func generateFieldsTypes(db *sql.DB, columns []*sql.ColumnType, depth int, jsonA
 
 		var annotations []string
 		if gormAnnotation == true {
-			if i == 0 {
+			if Contains(primaryKey, key) {
 				annotations = append(annotations, fmt.Sprintf("gorm:\"column:%s;primary_key\"", key))
 			} else {
 				annotations = append(annotations, fmt.Sprintf("gorm:\"column:%s\"", key))
 			}
-
 		}
 		if jsonAnnotation == true {
 			annotations = append(annotations, fmt.Sprintf("json:\"%s\"", key))
@@ -141,10 +237,22 @@ func generateFieldsTypes(db *sql.DB, columns []*sql.ColumnType, depth int, jsonA
 				fieldName,
 				valueType)
 		}
-
+		if colRemark != nil {
+			field += fmt.Sprintf(" // %s", colRemark[key])
+		}
 		fields = append(fields, field)
 	}
 	return fields
+}
+
+func Contains(str []string, s string) (flag bool) {
+	for _, value := range str {
+		if value == s {
+			flag = true
+			return
+		}
+	}
+	return
 }
 
 func sqlTypeToGoType(mysqlType string, nullable bool, gureguTypes bool) string {
