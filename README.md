@@ -18,9 +18,9 @@
 |gorm|gorm|添加gorm标记|
 |guregu|guregu|支持可为空值的字段类型|
  ````
- > go run main.go --package "github.com/zxbit2011/rad/example" --json --gorm --guregu
+ > go run main.go --package "github.com/devopsmi/rad/example" --json --gorm --guregu
  ````
 * 自定义方式
  ````
- > go run main.go --package "github.com/zxbit2011/rad/example" --dbHost 192.168.2.140 --dbName daas --dbUser cox --dbPassword "tqojg&WIGggN89bm"  --json --gorm --guregu
+ > go run main.go --package "github.com/devopsmi/rad/example" --dbHost 192.168.2.140 --dbName daas --dbUser cox --dbPassword "tqojg&WIGggN89bm"  --json --gorm --guregu
  ````
