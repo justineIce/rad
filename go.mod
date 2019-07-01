@@ -2,6 +2,29 @@ module github.com/devopsmi/rad
 
 go 1.12
 
+require (
+	github.com/BurntSushi/toml v0.3.1
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/droundy/goopt v0.0.0-20170604162106-0b8effe182da
+	github.com/go-playground/locales v0.12.1 // indirect
+	github.com/go-playground/universal-translator v0.16.0 // indirect
+	github.com/guregu/null v3.4.0+incompatible
+	github.com/jimsmart/schema v0.0.0-20181113191328-8d0563922e25
+	github.com/jinzhu/gorm v1.9.8
+	github.com/jinzhu/inflection v0.0.0-20190603042836-f5c5f50e6090
+	github.com/kr/pretty v0.1.0 // indirect
+	github.com/labstack/echo v3.3.10+incompatible
+	github.com/labstack/gommon v0.2.8
+	github.com/leodido/go-urn v1.1.0 // indirect
+	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/noaway/dateparse v0.0.0-20171117034806-ad2b19d7b298
+	github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516
+	github.com/stretchr/testify v1.3.0
+	github.com/valyala/fasttemplate v1.0.1 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
+	gopkg.in/go-playground/validator.v9 v9.29.0
+)
+
 replace (
 	cloud.google.com/go => github.com/googleapis/google-cloud-go v0.40.0
 	golang.org/x/crypto => github.com/golang/crypto v0.0.0-20190605123033-f99c8df09eb5
@@ -20,21 +43,4 @@ replace (
 	google.golang.org/appengine => github.com/golang/appengine v1.6.1
 	google.golang.org/genproto => github.com/google/go-genproto v0.0.0-20190605220351-eb0b1bdb6ae6
 	google.golang.org/grpc => github.com/grpc/grpc-go v1.21.1
-)
-
-require (
-	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3
-	github.com/droundy/goopt v0.0.0-20170604162106-0b8effe182da
-	github.com/go-sql-driver/mysql v1.4.1
-	github.com/guregu/null v3.4.0+incompatible
-	github.com/jimsmart/schema v0.0.0-20181113191328-8d0563922e25
-	github.com/jinzhu/gorm v1.9.8
-	github.com/jinzhu/inflection v0.0.0-20190603042836-f5c5f50e6090
-	github.com/julienschmidt/httprouter v1.2.0
-	github.com/kr/pretty v0.1.0 // indirect
-	github.com/lib/pq v1.1.1
-	github.com/mattn/go-sqlite3 v1.10.0
-	github.com/onsi/ginkgo v1.8.0 // indirect
-	github.com/onsi/gomega v1.5.0 // indirect
-	github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516
 )

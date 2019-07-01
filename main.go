@@ -16,7 +16,6 @@ import (
 	"github.com/jimsmart/schema"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/jinzhu/inflection"
-	_ "github.com/lib/pq"
 	"github.com/serenize/snaker"
 )
 
