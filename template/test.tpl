@@ -87,13 +87,14 @@ func TestGet{{.StructName}}Page(t *testing.T) {
 func TestAdd{{.StructName}}(t *testing.T) {
 	e := echo.New()
 	f := url.Values{}
-	f.Add("name", "王五")
+	{{ range .Columns }}{{if not .PrimaryKey }}
+	f.Add("{{ .ColumnName }}", "{{ .AddTestValue }}"){{end}}{{end}}
 	req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}/add", strings.NewReader(f.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	// 断言
-	if assert.NoError(t, handle.Add{{.StructName}}(c)) {
+	if assert.NoError(t, handle.Save{{.StructName}}(c)) {
 		if assert.Equal(t, http.StatusOK, rec.Code) {
 			body := rec.Body.String()
 			result := utils.ToResultParam(rec.Body.Bytes())
@@ -111,14 +112,14 @@ func TestAdd{{.StructName}}(t *testing.T) {
 func TestUpdate{{.StructName}}(t *testing.T) {
 	e := echo.New()
 	f := url.Values{}
-	f.Add("id", "1")
-	f.Add("name", "张三改")
+	{{ range .Columns }}
+	f.Add("{{ .ColumnName }}", "{{ .UpdateTestValue }}"){{end}}
 	req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}/update", strings.NewReader(f.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 	// 断言
-	if assert.NoError(t, handle.Update{{.StructName}}(c)) {
+	if assert.NoError(t, handle.Save{{.StructName}}(c)) {
 		if assert.Equal(t, http.StatusOK, rec.Code) {
 			body := rec.Body.String()
 			result := utils.ToResultParam(rec.Body.Bytes())

@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 	"github.com/astaxie/beego/logs"
-	"github.com/devopsmi/raddemo/config"
+	"github.com/zxbit2011/raddemo/config"
 )
 
 func NewLog(c *config.Log) *logs.BeeLogger {

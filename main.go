@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/devopsmi/rad/dbmeta"
+	"github.com/zxbit2011/rad/dbmeta"
 	"go/format"
 	"io/ioutil"
 	"os"
@@ -18,7 +18,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/jinzhu/inflection"
 	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/serenize/snaker"
 )
 
@@ -104,6 +103,12 @@ func main() {
 		panic(err)
 	}
 	createFileContent("example/utils/uuid.go", string(data))
+	// echo bind.go
+	data, err = readAll("template/bind.tpl")
+	if err != nil {
+		panic(err)
+	}
+	createFileContent("example/handle/bind.go", string(data))
 	//result
 	data, err = readAll("template/result.tpl")
 	if err != nil {
@@ -206,7 +211,8 @@ func main() {
 		ExecuteTemplate(h, handlePath, map[string]string{"PackageName": *packageName, "StructName": structName,
 			"singName": dbmeta.FmtFieldName2(tableName), "TableRemark": modelInfo.TableRemark})
 		//test
-		ExecuteTemplate(t, testPath, map[string]string{"PackageName": *packageName, "StructName": structName, "SingName": singName})
+		ExecuteTemplate(t, testPath, map[string]interface{}{"PackageName": *packageName, "StructName": structName,
+			"SingName": singName, "FieldDefVal": modelInfo.FieldDefVal, "Columns": modelInfo.Columns})
 		//router
 		ExecuteTemplate(r, routerPath, map[string]string{"PackageName": *packageName, "StructName": structName, "SingName": singName})
 		// add router

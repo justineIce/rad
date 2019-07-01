@@ -46,3 +46,15 @@ func Test_Copy(t *testing.T) {
 		t.Errorf("expect: %+v, but got %+x", expected, dst)
 	}
 }
+
+func TestRandom(t *testing.T) {
+	for i := 0; i < 5; i++ {
+		t.Log(GetRandom(10))
+	}
+}
+
+func TestRandomStr(t *testing.T) {
+	for i := 0; i < 5; i++ {
+		t.Log(GetRandomString(10))
+	}
+}

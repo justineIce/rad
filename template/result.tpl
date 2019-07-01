@@ -34,6 +34,7 @@ const (
 
 const (
     GetParsFailResult   = "获取参数失败"
+	GetDataNullResult   = "数据不存在"
 	AddSuccessResult    = "添加成功"
 	UpdateSuccessResult = "修改成功"
 	DeleteSuccessResult = "删除成功"

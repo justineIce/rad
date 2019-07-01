@@ -4,12 +4,15 @@ import (
 	"github.com/jinzhu/gorm"
 	"{{.PackageName}}/config"
 	"time"
+	"gopkg.in/go-playground/validator.v9"
 )
 var (
 	//DB 数据库操作
 	DB *gorm.DB
 	//Conf 配置相关
 	Conf *config.Config
+	//Validate struct验证
+	Validate *validator.Validate
 )
 
 //ConfPath 配置文件路径

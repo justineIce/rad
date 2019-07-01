@@ -2,11 +2,11 @@ package dbmeta
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
-
-	"github.com/jimsmart/schema"
 )
 
 type ModelInfo struct {
@@ -17,6 +17,8 @@ type ModelInfo struct {
 	TableRemark     string
 	Fields          []string
 	PrimaryKey      []string
+	FieldDefVal     map[string]interface{}
+	Columns         []*ColumnInfo
 }
 
 // commonInitialisms is a set of common initialisms.
@@ -87,6 +89,40 @@ const (
 	golangTime       = "time.Time"
 )
 
+type ColumnInfo struct {
+	ColumnName             string `json:"column_name"`              //字段名称
+	IsNullable             string `json:"is_nullable"`              //是否允许为空
+	DataType               string `json:"data_type"`                //字段类型
+	CharacterMaximumLength string `json:"character_maximum_length"` //长度
+	CharacterOctetLength   string `json:"character_octet_length"`   //字符八位字节长度
+	NumericPrecision       string `json:"numeric_precision"`        //double/floag/numeric 长度
+	NumericScale           string `json:"numeric_scale"`            //小数点
+	ColumnComment          string `json:"column_comment"`           //字段备注
+	AddTestValue           interface{}                              //字段test时值
+	UpdateTestValue        interface{}                              //字段test时值
+	PrimaryKey             bool                                     //是否为主键
+}
+
+//默认值
+func GetTableDesc(db *sql.DB, tableName string) (fieldDef map[string]interface{}, primaryKey []string, err error) {
+	var data []map[string]interface{}
+	data, err = Query(db, fmt.Sprintf("desc `%s`", tableName))
+	if err != nil {
+		return
+	}
+	fieldDef = make(map[string]interface{}, 0)
+	for _, value := range data {
+		if value["Key"].(string) == "PRI" {
+			primaryKey = append(primaryKey, value["Field"].(string))
+		}
+		if value["Default"] != nil {
+			fieldDef[ value["Field"].(string)] = value["Default"].(string)
+		}
+	}
+	return
+}
+
+//表备注
 func GetTableRemark(db *sql.DB, dbName, tableName string) (remark string, err error) {
 	var data []map[string]interface{}
 	data, err = Query(db, fmt.Sprintf("SELECT TABLE_COMMENT FROM information_schema.TABLES WHERE TABLE_NAME='%s' AND table_schema='%s'", tableName, dbName))
@@ -98,6 +134,8 @@ func GetTableRemark(db *sql.DB, dbName, tableName string) (remark string, err er
 	}
 	return
 }
+
+//主键
 func GetTablePrimaryKey(db *sql.DB, dbName, tableName string) (primaryKey []string, err error) {
 	var data []map[string]interface{}
 	data, err = Query(db, fmt.Sprintf("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.`KEY_COLUMN_USAGE` WHERE table_name='%s'  AND table_schema='%s' AND constraint_name='PRIMARY'", tableName, dbName))
@@ -111,19 +149,25 @@ func GetTablePrimaryKey(db *sql.DB, dbName, tableName string) (primaryKey []stri
 	}
 	return
 }
-func GetTableColumnRemark(db *sql.DB, dbName, tableName string) (remark map[string]string, err error) {
+
+//字段备注
+func GetTableColumnRemark(db *sql.DB, dbName, tableName string) (cols []*ColumnInfo, err error) {
 	var data []map[string]interface{}
-	data, err = Query(db, fmt.Sprintf("SELECT COLUMN_NAME,column_comment FROM INFORMATION_SCHEMA.Columns WHERE TABLE_NAME='%s' AND table_schema='%s'", tableName, dbName))
+	s := `select column_name,is_nullable,data_type,character_maximum_length,character_octet_length,numeric_precision,
+	numeric_scale,column_comment from information_schema.columns where table_name='%s' AND table_schema='%s'`
+	data, err = Query(db, fmt.Sprintf(s, tableName, dbName))
 	if err != nil {
 		return
 	}
 	if len(data) > 0 {
-		//var cols []map[string]interface{}
-		remark = make(map[string]string)
-		for _, value := range data {
-			name := value["COLUMN_NAME"]
-			comment := value["column_comment"]
-			remark[fmt.Sprintf("%v", name)] = fmt.Sprintf("%v", comment)
+		var b []byte
+		b, err = json.Marshal(data)
+		if err != nil {
+			return
+		}
+		err = json.Unmarshal(b, &cols)
+		if err != nil {
+			return
 		}
 	}
 	return
@@ -183,12 +227,11 @@ func Query(db *sql.DB, queryStr string, args ...interface{}) ([]map[string]inter
 
 // GenerateStruct generates a struct for the given table.
 func GenerateStruct(db *sql.DB, dbName string, tableName string, structName string, pkgName string, jsonAnnotation bool, gormAnnotation bool, gureguTypes bool) *ModelInfo {
-	cols, _ := schema.Table(db, tableName)
-	colRemark, _ := GetTableColumnRemark(db, dbName, tableName)
+	cols, _ := GetTableColumnRemark(db, dbName, tableName)
 	tableRemark, _ := GetTableRemark(db, dbName, tableName)
-	primaryKey, _ := GetTablePrimaryKey(db, dbName, tableName)
-	fields := generateFieldsTypes(cols, colRemark, primaryKey, 0, jsonAnnotation, gormAnnotation, gureguTypes)
-
+	//primaryKey, _ := GetTablePrimaryKey(db, dbName, tableName)
+	fieldDef, primaryKey, _ := GetTableDesc(db, tableName)
+	fields := generateFieldsTypes(cols, fieldDef, primaryKey, jsonAnnotation, gormAnnotation, gureguTypes)
 	var modelInfo = &ModelInfo{
 		PackageName:     pkgName,
 		StructName:      structName,
@@ -197,52 +240,61 @@ func GenerateStruct(db *sql.DB, dbName string, tableName string, structName stri
 		ShortStructName: strings.ToLower(string(structName[0])),
 		Fields:          fields,
 		PrimaryKey:      primaryKey,
+		Columns:         cols,
 	}
-
 	return modelInfo
 }
 
 // Generate fields string
-func generateFieldsTypes(columns []*sql.ColumnType, colRemark map[string]string, primaryKey []string, depth int, jsonAnnotation bool,
+func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{}, primaryKey []string, jsonAnnotation bool,
 	gormAnnotation bool, gureguTypes bool) (fields []string) {
 	var field = ""
 	for _, c := range columns {
-		nullable, _ := c.Nullable()
-		key := c.Name()
-		valueType := sqlTypeToGoType(strings.ToLower(c.DatabaseTypeName()), nullable, gureguTypes)
+		key := c.ColumnName
+		valueType, validate, addDefVal, updateDefVal := sqlTypeToGoType(c, gureguTypes)
 		if valueType == "" { // unknown type
 			continue
 		}
+		if addDefVal != nil {
+			c.AddTestValue = addDefVal
+		}
+		if updateDefVal != nil {
+			c.UpdateTestValue = updateDefVal
+		}
+		if Contains(primaryKey, key) {
+			c.PrimaryKey = Contains(primaryKey, key)
+		}
 		fieldName := FmtFieldName(stringifyFirstChar(key))
-
 		var annotations []string
 		if gormAnnotation == true {
-			if Contains(primaryKey, key) {
-				annotations = append(annotations, fmt.Sprintf("gorm:\"column:%s;primary_key\"", key))
-			} else {
-				annotations = append(annotations, fmt.Sprintf("gorm:\"column:%s\"", key))
+			var gormTags []string
+			gormTags = append(gormTags, fmt.Sprintf("column:%s", key))
+			if c.PrimaryKey {
+				gormTags = append(gormTags, "primary_key")
 			}
+			if fieldDef[key] != nil {
+				gormTags = append(gormTags, fmt.Sprintf("default:'%v'", fieldDef[key]))
+			}
+			annotations = append(annotations, fmt.Sprintf("gorm:\"%s\"", strings.Join(gormTags, ";")))
 		}
 		if jsonAnnotation == true {
-			annotations = append(annotations, fmt.Sprintf("json:\"%s\"", key))
+			annotations = append(annotations, fmt.Sprintf("json:\"%s\" form:\"%s\" query:\"%s\"", key, key, key))
+		}
+		if len(validate) > 0 {
+			annotations = append(annotations, fmt.Sprintf("validate:\"%s\"", strings.Join(validate, ",")))
 		}
 		if len(annotations) > 0 {
-			field = fmt.Sprintf("%s %s `%s`",
-				fieldName,
-				valueType,
-				strings.Join(annotations, " "))
+			field = fmt.Sprintf("%s %s `%s`", fieldName, valueType, strings.Join(annotations, " "))
 
 		} else {
-			field = fmt.Sprintf("%s %s",
-				fieldName,
-				valueType)
+			field = fmt.Sprintf("%s %s", fieldName, valueType)
 		}
-		if colRemark != nil {
-			field += fmt.Sprintf(" // %s", colRemark[key])
+		if c.ColumnComment != "" {
+			field += fmt.Sprintf(" // %s", c.ColumnComment)
 		}
 		fields = append(fields, field)
 	}
-	return fields
+	return
 }
 
 func Contains(str []string, s string) (flag bool) {
@@ -255,55 +307,98 @@ func Contains(str []string, s string) (flag bool) {
 	return
 }
 
-func sqlTypeToGoType(mysqlType string, nullable bool, gureguTypes bool) string {
+func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, validate []string, addDefVal interface{}, updateDefVal interface{}) {
+	var nullable bool
+	if strings.ToLower(c.IsNullable) == "yes" {
+		nullable = true
+	} else {
+		if c.ColumnName != "updated_at" && c.ColumnName != "created_at" {
+			validate = append(validate, "required")
+		}
+	}
+	mysqlType := strings.ToLower(c.DataType)
 	switch mysqlType {
 	case "tinyint", "int", "smallint", "mediumint":
+		addDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
+		updateDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
 		if nullable {
 			if gureguTypes {
-				return gureguNullInt
+				varType = gureguNullInt
+				return
 			}
-			return sqlNullInt
+			varType = sqlNullInt
+			return
 		}
-		return golangInt
+		varType = golangInt
+		return
 	case "bigint":
+		addDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
+		updateDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
 		if nullable {
 			if gureguTypes {
-				return gureguNullInt
+				varType = gureguNullInt
+				return
 			}
-			return sqlNullInt
+			varType = sqlNullInt
+			return
 		}
-		return golangInt64
+		varType = golangInt64
+		return
 	case "char", "enum", "varchar", "longtext", "mediumtext", "text", "tinytext":
+		addDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength)/2)
+		updateDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength)/2)
+		validate = append(validate, fmt.Sprintf("lte=%s", c.CharacterMaximumLength))
 		if nullable {
+			validate = append(validate, "omitempty")
 			if gureguTypes {
-				return gureguNullString
+				varType = gureguNullString
+				return
 			}
-			return sqlNullString
+			varType = sqlNullString
+			return
 		}
-		return "string"
+		varType = "string"
+		return
 	case "date", "datetime", "time", "timestamp":
+		addDefVal = time.Now().AddDate(0, 0, rand.Intn(100)).Format("2006-01-02 15:04:05")
+		updateDefVal = time.Now().AddDate(0, 0, rand.Intn(100)).Format("2006-01-02 15:04:05")
 		if nullable && gureguTypes {
-			return gureguNullTime
+			varType = gureguNullTime
+			return
 		}
-		return golangTime
+		varType = golangTime
+		return
 	case "decimal", "double":
+		addDefVal = fmt.Sprintf("%d.%d", GetRandom(StrToInt(c.NumericPrecision)/2), GetRandom(StrToInt(c.NumericScale)-1))
+		updateDefVal = fmt.Sprintf("%d.%d", GetRandom(StrToInt(c.NumericPrecision)/2), GetRandom(StrToInt(c.NumericScale)-1))
 		if nullable {
 			if gureguTypes {
-				return gureguNullFloat
+				varType = gureguNullFloat
+				return
 			}
-			return sqlNullFloat
+			varType = sqlNullFloat
+			return
 		}
-		return golangFloat64
+		varType = golangFloat64
+		return
 	case "float":
+		addDefVal = fmt.Sprintf("%d.%d", GetRandom(StrToInt(c.NumericPrecision)/2), GetRandom(StrToInt(c.NumericScale)-1))
+		updateDefVal = fmt.Sprintf("%d.%d", GetRandom(StrToInt(c.NumericPrecision)/2), GetRandom(StrToInt(c.NumericScale)-1))
 		if nullable {
 			if gureguTypes {
-				return gureguNullFloat
+				varType = gureguNullFloat
+				return
 			}
-			return sqlNullFloat
+			varType = sqlNullFloat
+			return
 		}
-		return golangFloat32
+		varType = golangFloat32
+		return
 	case "binary", "blob", "longblob", "mediumblob", "varbinary":
-		return golangByteArray
+		addDefVal = []byte(GetRandomString(StrToInt(c.CharacterMaximumLength)/2))
+		updateDefVal = []byte(GetRandomString(StrToInt(c.CharacterMaximumLength)/2))
+		varType = golangByteArray
+		return
 	}
-	return ""
+	return
 }

@@ -59,6 +59,41 @@ func Get{{.StructName}}Page(c echo.Context) error {
 	})
 }
 
+// {{.TableRemark}}保存数据
+func Save{{.StructName}}(c echo.Context) error {
+	var {{.singName}}  model.{{.StructName}}
+	idStr := c.FormValue("id")
+	isFlag := false
+	if idStr != "" {
+		if err := global.DB.First(&{{.singName}},  idStr).Error; err != nil {
+			c.Logger().Error(err)
+			return utils.ErrorNull(c, utils.GetDataNullResult)
+		}
+		isFlag = true
+	}
+	//需限制入参参数
+	if err := new(CustomBinder).Bind(&{{.singName}}, c); err != nil {
+		c.Logger().Error(err)
+		return utils.ErrorNull(c,  utils.GetParsFailResult)
+	}
+	if isFlag {
+		//修改
+		if err := global.DB.Save(&{{.singName}}).Error; err != nil {
+			c.Logger().Error(err)
+			return utils.ErrorNull(c, utils.UpdateFailResult)
+		}
+		return utils.SuccessNullMsg(c, utils.UpdateSuccessResult)
+	} else {
+		//新增
+		{{.singName}}.ID = utils.ID()
+		if err := global.DB.Create(&{{.singName}}).Error; err != nil {
+			c.Logger().Error(err)
+			return utils.ErrorNull(c,   utils.AddFailResult)
+		}
+	    return utils.SuccessNullMsg(c, utils.AddSuccessResult)
+	}
+}
+
 // {{.TableRemark}}新增数据
 func Add{{.StructName}}(c echo.Context) error {
 	{{.singName}} := new(model.{{.StructName}})

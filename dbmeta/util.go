@@ -1,11 +1,24 @@
 package dbmeta
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"errors"
+	"math/big"
+	math "math/rand"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
+)
+
+const (
+	// Set of characters to use for generating random strings
+	Alphabet     = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+	Numerals     = "1234567890"
+	Alphanumeric = Alphabet + Numerals
+	Ascii        = Alphanumeric + "~!@#$%^&*()-_+={}[]\\|<,>.?/\"';:`"
 )
 
 // fmtFieldName formats a string as a struct key
@@ -146,4 +159,95 @@ func Copy(dst interface{}, src interface{}) error {
 
 func isZeroOfUnderlyingType(x interface{}) bool {
 	return x == nil || reflect.DeepEqual(x, reflect.Zero(reflect.TypeOf(x)).Interface())
+}
+
+// global value that performs all random number operations
+var globalSource = math.New(&source{})
+
+// math/rand Source using entropy from crypto/rand
+type source struct {
+	data [8]byte // 64 bits
+	mtx  sync.Mutex
+}
+
+// Float64 returns a pseudo-random number in [0.0,1.0)
+func Float64() float64 { return globalSource.Float64() }
+
+// needed by math/rand.Source, but we don't require seeding
+func (src *source) Seed(_ int64) {}
+
+// needed by math/rand.Source
+func (src *source) Int63() int64 {
+	src.mtx.Lock()
+	defer src.mtx.Unlock()
+
+	data := src.data[:]
+	n, err := rand.Read(data)
+	if err != nil {
+		panic("crypto.Read failed: " + err.Error())
+	}
+	if n != 8 {
+		panic("read too few random bytes")
+	}
+	x := binary.BigEndian.Uint64(data)
+	return int64(x >> 1) // need 63 bit number
+}
+
+// Intn returns, as an int, a non-negative pseudo-random number in
+// [0,n). It panics if n <= 0.
+func Intn(n int) int {
+	return globalSource.Intn(n)
+}
+
+// Int63 returns a non-negative pseudo-random 63-bit integer as an
+// int64.
+func Int63() int64 {
+	return globalSource.Int63()
+}
+
+// Int63n returns, as an int64, a non-negative pseudo-random number in
+// [0,n). It panics if n <= 0.
+func Int63n(n int64) int64 {
+	return globalSource.Int63n(n)
+}
+
+// String returns a random string n characters long, composed of entities
+// from charset.
+func String(n int, charset string) (string, error) {
+	randstr := make([]byte, n) // Random string to return
+	charlen := big.NewInt(int64(len(charset)))
+	for i := 0; i < n; i++ {
+		b, err := rand.Int(rand.Reader, charlen)
+		if err != nil {
+			return "", err
+		}
+		r := int(b.Int64())
+		randstr[i] = charset[r]
+	}
+	return string(randstr), nil
+}
+
+// AlphaString returns a random alphanumeric string n characters long.
+func GetRandomString(n int) (s string) {
+	s, _ = String(n, Alphanumeric)
+	return
+}
+
+func GetRandom(length int) int {
+	if length <= 0 {
+		return 0
+	}
+	var arr []string
+	for i := 0; i < length; i++ {
+		arr = append(arr, strconv.Itoa(Intn(10)))
+	}
+	return StrToInt(strings.Join(arr, ""))
+}
+
+func StrToInt(str string) (i int) {
+	i, _ = strconv.Atoi(str)
+	if i == 0 {
+		i = 1
+	}
+	return
 }
