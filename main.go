@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/devopsmi/rad/dbmeta"
+	"github.com/devopsmi/rad/util"
 	"go/format"
 	"io/ioutil"
 	"os"
@@ -95,7 +96,13 @@ func main() {
 	ExecuteTemplate(gi, "example/global/init.go", map[string]interface{}{
 		"PackageName": *packageName,
 	})
-	// utils uuid.go
+	// utils
+	// validation
+	_, err = util.Copy(curPath+"/template/validation", curPath+"/example/utils/validation")
+	if err != nil {
+		panic(err)
+	}
+	// uuid.go
 	data, err = readAll("template/uuid.tpl")
 	if err != nil {
 		panic(err)

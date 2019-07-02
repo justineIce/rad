@@ -90,17 +90,17 @@ const (
 )
 
 type ColumnInfo struct {
-	ColumnName             string `json:"column_name"`              //字段名称
-	IsNullable             string `json:"is_nullable"`              //是否允许为空
-	DataType               string `json:"data_type"`                //字段类型
-	CharacterMaximumLength string `json:"character_maximum_length"` //长度
-	CharacterOctetLength   string `json:"character_octet_length"`   //字符八位字节长度
-	NumericPrecision       string `json:"numeric_precision"`        //double/floag/numeric 长度
-	NumericScale           string `json:"numeric_scale"`            //小数点
-	ColumnComment          string `json:"column_comment"`           //字段备注
-	AddTestValue           interface{}                              //字段test时值
-	UpdateTestValue        interface{}                              //字段test时值
-	PrimaryKey             bool                                     //是否为主键
+	ColumnName             string      `json:"column_name"`              //字段名称
+	IsNullable             string      `json:"is_nullable"`              //是否允许为空
+	DataType               string      `json:"data_type"`                //字段类型
+	CharacterMaximumLength string      `json:"character_maximum_length"` //长度
+	CharacterOctetLength   string      `json:"character_octet_length"`   //字符八位字节长度
+	NumericPrecision       string      `json:"numeric_precision"`        //double/floag/numeric 长度
+	NumericScale           string      `json:"numeric_scale"`            //小数点
+	ColumnComment          string      `json:"column_comment"`           //字段备注
+	AddTestValue           interface{} //字段test时值
+	UpdateTestValue        interface{} //字段test时值
+	PrimaryKey             bool        //是否为主键
 }
 
 //默认值
@@ -116,7 +116,7 @@ func GetTableDesc(db *sql.DB, tableName string) (fieldDef map[string]interface{}
 			primaryKey = append(primaryKey, value["Field"].(string))
 		}
 		if value["Default"] != nil {
-			fieldDef[ value["Field"].(string)] = value["Default"].(string)
+			fieldDef[value["Field"].(string)] = value["Default"].(string)
 		}
 	}
 	return
@@ -251,7 +251,7 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 	var field = ""
 	for _, c := range columns {
 		key := c.ColumnName
-		valueType, validate, addDefVal, updateDefVal := sqlTypeToGoType(c, gureguTypes)
+		valueType, valid, addDefVal, updateDefVal := sqlTypeToGoType(c, gureguTypes)
 		if valueType == "" { // unknown type
 			continue
 		}
@@ -280,8 +280,13 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 		if jsonAnnotation == true {
 			annotations = append(annotations, fmt.Sprintf("json:\"%s\" form:\"%s\" query:\"%s\"", key, key, key))
 		}
-		if len(validate) > 0 {
-			annotations = append(annotations, fmt.Sprintf("validate:\"%s\"", strings.Join(validate, ",")))
+		if len(valid) > 0 {
+			annotations = append(annotations, fmt.Sprintf("valid:\"%s\"", strings.Join(valid, ";")))
+		}
+		if c.ColumnComment != "" {
+			//逗号分隔
+			comm := strings.Split(c.ColumnComment, ",")
+			annotations = append(annotations, fmt.Sprintf("validAlias:\"%s\"", comm[0]))
 		}
 		if len(annotations) > 0 {
 			field = fmt.Sprintf("%s %s `%s`", fieldName, valueType, strings.Join(annotations, " "))
@@ -307,20 +312,20 @@ func Contains(str []string, s string) (flag bool) {
 	return
 }
 
-func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, validate []string, addDefVal interface{}, updateDefVal interface{}) {
+func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, valid []string, addDefVal interface{}, updateDefVal interface{}) {
 	var nullable bool
 	if strings.ToLower(c.IsNullable) == "yes" {
 		nullable = true
 	} else {
 		if c.ColumnName != "updated_at" && c.ColumnName != "created_at" {
-			validate = append(validate, "required")
+			valid = append(valid, "Required")
 		}
 	}
 	mysqlType := strings.ToLower(c.DataType)
 	switch mysqlType {
 	case "tinyint", "int", "smallint", "mediumint":
-		addDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
-		updateDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
+		addDefVal = GetRandom(StrToInt(c.NumericPrecision) / 2)
+		updateDefVal = GetRandom(StrToInt(c.NumericPrecision) / 2)
 		if nullable {
 			if gureguTypes {
 				varType = gureguNullInt
@@ -332,8 +337,8 @@ func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, validate 
 		varType = golangInt
 		return
 	case "bigint":
-		addDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
-		updateDefVal = GetRandom(StrToInt(c.NumericPrecision)/2)
+		addDefVal = GetRandom(StrToInt(c.NumericPrecision) / 2)
+		updateDefVal = GetRandom(StrToInt(c.NumericPrecision) / 2)
 		if nullable {
 			if gureguTypes {
 				varType = gureguNullInt
@@ -345,11 +350,11 @@ func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, validate 
 		varType = golangInt64
 		return
 	case "char", "enum", "varchar", "longtext", "mediumtext", "text", "tinytext":
-		addDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength)/2)
-		updateDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength)/2)
-		validate = append(validate, fmt.Sprintf("lte=%s", c.CharacterMaximumLength))
+		addDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength) / 2)
+		updateDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength) / 2)
+		valid = append(valid, fmt.Sprintf("MaxSize(%s)", c.CharacterMaximumLength))
 		if nullable {
-			validate = append(validate, "omitempty")
+			valid = append(valid, "omitempty")
 			if gureguTypes {
 				varType = gureguNullString
 				return
@@ -395,8 +400,8 @@ func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, validate 
 		varType = golangFloat32
 		return
 	case "binary", "blob", "longblob", "mediumblob", "varbinary":
-		addDefVal = []byte(GetRandomString(StrToInt(c.CharacterMaximumLength)/2))
-		updateDefVal = []byte(GetRandomString(StrToInt(c.CharacterMaximumLength)/2))
+		addDefVal = []byte(GetRandomString(StrToInt(c.CharacterMaximumLength) / 2))
+		updateDefVal = []byte(GetRandomString(StrToInt(c.CharacterMaximumLength) / 2))
 		varType = golangByteArray
 		return
 	}

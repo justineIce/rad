@@ -3,6 +3,7 @@ package global
 import (
 	"github.com/jinzhu/gorm"
 	"{{.PackageName}}/config"
+	"{{.PackageName}}/utils/validation"
 	"time"
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -56,4 +57,20 @@ func NewGorm() (*gorm.DB, error) {
 	db.DB().SetMaxOpenConns(Conf.Gorm.MaxOpenConns)
 	db.DB().SetConnMaxLifetime(time.Duration(Conf.Gorm.MaxLifetime) * time.Second)
 	return db, nil
+}
+
+// Valid 表单验证
+func Valid(st interface{}) (errs []string) {
+	validate := validation.Validation{}
+	flag, err := validate.Valid(st)
+	if err != nil {
+		println(err)
+		return append(errs, err.Error())
+	}
+	if !flag {
+		for _, err := range validate.Errors {
+			errs = append(errs, err.ZhName+err.Message)
+		}
+	}
+	return
 }

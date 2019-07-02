@@ -70,11 +70,18 @@ func Save{{.StructName}}(c echo.Context) error {
 			return utils.ErrorNull(c, utils.GetDataNullResult)
 		}
 		isFlag = true
+	}else{
+		//新增
+		{{.singName}}.ID = utils.ID()
 	}
 	//需限制入参参数
 	if err := new(CustomBinder).Bind(&{{.singName}}, c); err != nil {
 		c.Logger().Error(err)
 		return utils.ErrorNull(c,  utils.GetParsFailResult)
+	}
+	errs := global.Valid(&{{.singName}})
+	if len(errs) > 0 {
+		return utils.Error(c, "参数验证失败", errs)
 	}
 	if isFlag {
 		//修改
@@ -82,46 +89,14 @@ func Save{{.StructName}}(c echo.Context) error {
 			c.Logger().Error(err)
 			return utils.ErrorNull(c, utils.UpdateFailResult)
 		}
-		return utils.SuccessNullMsg(c, utils.UpdateSuccessResult)
+		return utils.SuccessNull(c, utils.UpdateSuccessResult)
 	} else {
-		//新增
-		{{.singName}}.ID = utils.ID()
 		if err := global.DB.Create(&{{.singName}}).Error; err != nil {
 			c.Logger().Error(err)
 			return utils.ErrorNull(c,   utils.AddFailResult)
 		}
-	    return utils.SuccessNullMsg(c, utils.AddSuccessResult)
+	    return utils.SuccessNull(c, utils.AddSuccessResult)
 	}
-}
-
-// {{.TableRemark}}新增数据
-func Add{{.StructName}}(c echo.Context) error {
-	{{.singName}} := new(model.{{.StructName}})
-	if err := c.Bind({{.singName}}); err != nil {
-		return utils.ErrorNull(c, utils.GetParsFailResult)
-	}
-
-	//判断是否自增
-	{{.singName}}.ID = utils.ID()
-
-	if err := global.DB.Create({{.singName}}).Error; err != nil {
-		c.Logger().Errorf("Add{{.StructName}} error：%v", err)
-		return utils.ErrorNull(c, utils.AddFailResult)
-	}
-	return utils.SuccessNullMsg(c, utils.AddSuccessResult)
-}
-
-// {{.TableRemark}}修改数据
-func Update{{.StructName}}(c echo.Context) error {
-	{{.singName}} := new(model.{{.StructName}})
-	if err := c.Bind({{.singName}}); err != nil {
-		return utils.ErrorNull(c, utils.GetParsFailResult)
-	}
-	if err := global.DB.Save({{.singName}}).Error; err != nil {
-		c.Logger().Errorf("Update{{.StructName}} error：%v", err)
-		return utils.ErrorNull(c, utils.UpdateFailResult)
-	}
-	return utils.SuccessNullMsg(c, utils.UpdateSuccessResult)
 }
 
 // {{.TableRemark}}删除数据
