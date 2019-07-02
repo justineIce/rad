@@ -210,6 +210,8 @@ func main() {
 		testPath = fmt.Sprintf("example/test/%s_test.go", singName)
 		createFile(modelPath)
 		createFile(handlePath)
+		createFile(routerPath)
+		createFile(testPath)
 		//model
 		ExecuteTemplate(m, modelPath, modelInfo)
 		//handle

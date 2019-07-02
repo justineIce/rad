@@ -355,7 +355,6 @@ func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, valid []s
 		updateDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength) / 2)
 		valid = append(valid, fmt.Sprintf("MaxSize(%s)", c.CharacterMaximumLength))
 		if nullable {
-			valid = append(valid, "omitempty")
 			if gureguTypes {
 				varType = gureguNullString
 				return

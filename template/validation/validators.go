@@ -2,6 +2,7 @@ package validation
 
 import (
 	"fmt"
+	"github.com/guregu/null"
 	"reflect"
 	"regexp"
 	"strings"
@@ -132,6 +133,19 @@ func (r Required) IsSatisfied(obj interface{}) bool {
 	}
 	if t, ok := obj.(time.Time); ok {
 		return !t.IsZero()
+	}
+
+	if i, ok := obj.(null.Int); ok {
+		return i.Valid
+	}
+	if t, ok := obj.(null.Time); ok {
+		return !t.IsZero()
+	}
+	if b, ok := obj.(null.Bool); ok {
+		return b.Valid
+	}
+	if str, ok := obj.(null.String); ok {
+		return !str.Valid
 	}
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Slice {
@@ -286,6 +300,12 @@ func (m MinSize) IsSatisfied(obj interface{}) bool {
 	if str, ok := obj.(string); ok {
 		return utf8.RuneCountInString(str) >= m.Min
 	}
+	if str, ok := obj.(null.String); ok {
+		if !str.Valid {
+			return utf8.RuneCountInString(str.String) >= m.Min
+		}
+		return !str.Valid
+	}
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Slice {
 		return v.Len() >= m.Min
@@ -319,6 +339,12 @@ func (m MaxSize) IsSatisfied(obj interface{}) bool {
 	if str, ok := obj.(string); ok {
 		return utf8.RuneCountInString(str) <= m.Max
 	}
+	if str, ok := obj.(null.String); ok {
+		if !str.Valid {
+			return utf8.RuneCountInString(str.String) <= m.Max
+		}
+		return !str.Valid
+	}
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Slice {
 		return v.Len() <= m.Max
@@ -351,6 +377,12 @@ type Length struct {
 func (l Length) IsSatisfied(obj interface{}) bool {
 	if str, ok := obj.(string); ok {
 		return utf8.RuneCountInString(str) == l.N
+	}
+	if str, ok := obj.(null.String); ok {
+		if !str.Valid {
+			return utf8.RuneCountInString(str.String) == l.N
+		}
+		return !str.Valid
 	}
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Slice {
@@ -389,6 +421,17 @@ func (a Alpha) IsSatisfied(obj interface{}) bool {
 		}
 		return true
 	}
+
+	if str, ok := obj.(null.String); ok {
+		if !str.Valid {
+			for _, v := range str.String {
+				if ('Z' < v || v < 'A') && ('z' < v || v < 'a') {
+					return false
+				}
+			}
+		}
+		return !str.Valid
+	}
 	return false
 }
 
@@ -422,6 +465,16 @@ func (n Numeric) IsSatisfied(obj interface{}) bool {
 		}
 		return true
 	}
+	if str, ok := obj.(null.String); ok {
+		if !str.Valid {
+			for _, v := range str.String {
+				if '9' < v || v < '0' {
+					return false
+				}
+			}
+		}
+		return !str.Valid
+	}
 	return false
 }
 
@@ -454,6 +507,16 @@ func (a AlphaNumeric) IsSatisfied(obj interface{}) bool {
 			}
 		}
 		return true
+	}
+	if str, ok := obj.(null.String); ok {
+		if !str.Valid {
+			for _, v := range str.String {
+				if ('Z' < v || v < 'A') && ('z' < v || v < 'a') && ('9' < v || v < '0') {
+					return false
+				}
+			}
+		}
+		return !str.Valid
 	}
 	return false
 }

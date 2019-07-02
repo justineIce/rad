@@ -249,5 +249,8 @@ func StrToInt(str string) (i int) {
 	if i == 0 {
 		i = 1
 	}
+	if i > 100 {
+		return 100
+	}
 	return
 }

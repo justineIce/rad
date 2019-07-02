@@ -1,6 +1,7 @@
 package validation
 
 import (
+	"github.com/guregu/null"
 	"log"
 	"strings"
 	"testing"
@@ -13,11 +14,11 @@ import (
 // 各个函数的结果的 key 值为字段名.验证函数名
 type user struct {
 	Id     int
-	Name   string `valid:"Required;Match(/^Bee.*/)" validAlias:"姓名"` // Name 不能为空并且以 Bee 开头
-	Age    int    `valid:"Range(1, 140)"`                            // 1 <= Age <= 140，超出此范围即为不合法
-	Email  string `valid:"Email; MaxSize(100)"`                      // Email 字段需要符合邮箱格式，并且最大长度不能大于 100 个字符
-	Mobile string `valid:"Mobile"`                                   // Mobile 必须为正确的手机号
-	IP     string `valid:"IP"`                                       // IP 必须为一个正确的 IPv4 地址
+	Name   string      `valid:"Required;Match(/^Bee.*/)" validAlias:"姓名"` // Name 不能为空并且以 Bee 开头
+	Age    int         `valid:"Range(1, 140)"`                            // 1 <= Age <= 140，超出此范围即为不合法
+	Email  null.String `valid:"MaxSize(10)"`                              // Email 字段需要符合邮箱格式，并且最大长度不能大于 100 个字符
+	Mobile string      `valid:"Mobile"`                                   // Mobile 必须为正确的手机号
+	IP     string      `valid:"IP"`                                       // IP 必须为一个正确的 IPv4 地址
 }
 
 // 如果你的 struct 实现了接口 validation.ValidFormer
@@ -31,7 +32,7 @@ func (u *user) Valid(v *Validation) {
 
 func TestPointer2(t *testing.T) {
 	valid := Validation{}
-	u := user{}
+	u := user{Email: null.NewString("张三张三张三三张三", false)}
 	b, err := valid.Valid(&u)
 	if err != nil {
 		// handle error
@@ -41,7 +42,7 @@ func TestPointer2(t *testing.T) {
 		// validation does not pass
 		// blabla...
 		for _, err := range valid.Errors {
-			log.Println(err.ZhName, err.Message)
+			log.Println(err.Field, err.Message)
 		}
 	}
 }
