@@ -285,7 +285,8 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 		}
 		if c.ColumnComment != "" {
 			//逗号分隔
-			comm := strings.Split(c.ColumnComment, ",")
+			alias := strings.ReplaceAll(c.ColumnComment, "，", ",")
+			comm := strings.Split(alias, ",")
 			annotations = append(annotations, fmt.Sprintf("validAlias:\"%s\"", comm[0]))
 		}
 		if len(annotations) > 0 {
