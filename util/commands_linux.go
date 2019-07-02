@@ -1,3 +1,5 @@
+// +build !windows
+
 package utils
 
 import (
@@ -19,8 +21,7 @@ func Cmd(c Command) error {
 	return nil
 }
 
-
 func Copy(source, target string) error {
-	c := Command{name: "cp", args: []string{"-r",source, target}}
+	c := Command{name: "cp", args: []string{"-r", source, target}}
 	return Cmd(c)
 }
