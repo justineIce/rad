@@ -1,4 +1,4 @@
-// +build !linux
+// +build windows
 
 package util
 
@@ -7,18 +7,13 @@ import (
 	"strings"
 )
 
-const (
-	WINDOWS = "windows"
-	LINUX   = "linux"
-)
-
-type Command struct {
-	name string
-	args []string
-}
-
-func Copy(source, target string) (out []byte, err error) {
-	args := []string{strings.ReplaceAll(source, "/", "\\"), strings.ReplaceAll(target, "/", "\\"), "/E", "/Y", "/D","/Q","/I"}
+func Copy(source, target, exclude string) (out []byte, err error) {
+	var args []string
+	args = []string{strings.ReplaceAll(source, "/", "\\"), strings.ReplaceAll(target, "/", "\\"),
+		"/E", "/Y", "/D", "/Q", "/I"}
+	if exclude != "" {
+		args = append(args, "/EXCLUDE:"+strings.ReplaceAll(exclude, "/", "\\"))
+	}
 	out, err = exec.Command("xcopy", args...).Output()
 	return
 }

@@ -1,0 +1,28 @@
+// 字体颜色
+$theme-color: #1980ff;
+$theme-linear-gradient-color: #1980ff;
+$theme-box-shadow-color: #e5e5e5;
+/* Font
+------------------------------------- */
+$--font-size: 12px;
+$--font-color : #333333;
+/* Buttons
+------------------------------------- */
+$--button-font-size: 12px !default;
+$--button-font-weight: 400 !default;
+/* Table
+------------------------------------- */
+$--table-border-color: #eee;
+$--table-text-color: #333333;
+$--table-header-background: #f5f5f6;
+$--table-header-color: #f5f5f6;
+%table-button{
+  padding: 0;
+  border: unset;
+  padding-right: 10px;
+  background: unset;
+  color: $theme-color;
+}
+/* Form
+------------------------------------- */
+$--form-item-height: 32px;

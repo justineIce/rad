@@ -11,5 +11,25 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
+
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw*
+
 .idea/
 example/
+template/manage/node_modules
+template/manage/.DS_Store
+template/manage/node_modules
+template/manage//dist
+
+# Log files
+template/manage/npm-debug.log*
+template/manage/yarn-debug.log*
+template/manage/yarn-error.log*
+
+template/manage/package-lock.json

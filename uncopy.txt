@@ -1,0 +1,7 @@
+.lock
+template\manage\node_modules\
+template\manage\.idea\
+\manage\node_modules\
+\manage\.idea\
+\node_modules\
+\idea\

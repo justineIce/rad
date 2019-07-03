@@ -136,13 +136,13 @@ func (r Required) IsSatisfied(obj interface{}) bool {
 	}
 
 	if i, ok := obj.(null.Int); ok {
-		return i.Valid
+		return !i.Valid
 	}
 	if t, ok := obj.(null.Time); ok {
 		return !t.IsZero()
 	}
 	if b, ok := obj.(null.Bool); ok {
-		return b.Valid
+		return !b.Valid
 	}
 	if str, ok := obj.(null.String); ok {
 		return !str.Valid
@@ -193,6 +193,10 @@ func (m Min) IsSatisfied(obj interface{}) bool {
 		v = int(obj.(int16))
 	case int8:
 		v = int(obj.(int8))
+	case null.Int:
+		if i, ok := obj.(null.Int); ok {
+			return !i.Valid
+		}
 	default:
 		return false
 	}
@@ -239,6 +243,10 @@ func (m Max) IsSatisfied(obj interface{}) bool {
 		v = int(obj.(int16))
 	case int8:
 		v = int(obj.(int8))
+	case null.Int:
+		if i, ok := obj.(null.Int); ok {
+			return !i.Valid
+		}
 	default:
 		return false
 	}

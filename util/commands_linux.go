@@ -1,4 +1,4 @@
-// +build !windows
+// +build linux
 
 package utils
 
@@ -11,17 +11,16 @@ type Command struct {
 	args []string
 }
 
-func Cmd(c Command) error {
+func Cmd(c Command) (out []byte, err error) {
 	cmd := exec.Command(c.name, c.args...)
 	err := cmd.Start()
 	if err != nil {
 		return err
 	}
-	cmd.Output()
-	return nil
+	return cmd.Output()
 }
 
-func Copy(source, target string) error {
+func Copy(source, target, exclude, exclude string) (out []byte, err error) {
 	c := Command{name: "cp", args: []string{"-r", source, target}}
 	return Cmd(c)
 }

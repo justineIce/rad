@@ -93,12 +93,17 @@ func main() {
 		panic(err)
 	}
 	gi := getTemplate(string(data))
-	ExecuteTemplate(gi, "example/global/init.go", map[string]interface{}{
+	ExecuteTemplate(gi, "example/api/global/init.go", map[string]interface{}{
 		"PackageName": *packageName,
 	})
 	// utils
 	// validation
-	_, err = util.Copy(curPath+"/template/validation", curPath+"/example/utils/validation")
+	_, err = util.Copy(curPath+"/template/validation", curPath+"/example/api/utils/validation", "")
+	if err != nil {
+		panic(err)
+	}
+	// manage
+	_, err = util.Copy(curPath+"/template/manage", curPath+"/example/manage", curPath+"/uncopy.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -107,44 +112,44 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	createFileContent("example/utils/uuid.go", string(data))
+	createFileContent("example/api/utils/uuid.go", string(data))
 	// echo bind.go
 	data, err = readAll("template/bind.tpl")
 	if err != nil {
 		panic(err)
 	}
-	createFileContent("example/handle/bind.go", string(data))
+	createFileContent("example/api/handle/bind.go", string(data))
 	//result
 	data, err = readAll("template/result.tpl")
 	if err != nil {
 		panic(err)
 	}
-	createFileContent("example/utils/result.go", string(data))
+	createFileContent("example/api/utils/result.go", string(data))
 	//gorm
 	data, err = readAll("template/gorm.tpl")
 	if err != nil {
 		panic(err)
 	}
-	createFileContent("example/utils/gorm.go", string(data))
+	createFileContent("example/api/utils/gorm.go", string(data))
 	//page
 	data, err = readAll("template/page.tpl")
 	if err != nil {
 		panic(err)
 	}
-	createFileContent("example/model/page.go", string(data))
+	createFileContent("example/api/model/page.go", string(data))
 	// config.go
 	data, err = readAll("template/config.tpl")
 	if err != nil {
 		panic(err)
 	}
-	createFileContent("example/config/config.go", string(data))
+	createFileContent("example/api/config/config.go", string(data))
 	// config.toml
 	data, err = readAll("template/configtoml.tpl")
 	if err != nil {
 		panic(err)
 	}
 	cft := getTemplate(string(data))
-	ExecuteTemplateBase(cft, "example/config/config.toml", map[string]interface{}{
+	ExecuteTemplateBase(cft, "example/api/config/config.toml", map[string]interface{}{
 		"host":       dbHost,
 		"port":       dbPort,
 		"user":       dbUser,
@@ -185,7 +190,7 @@ func main() {
 		panic(err)
 	}
 	ti := getTemplate(string(data))
-	ExecuteTemplate(ti, "example/test/init.go", map[string]interface{}{
+	ExecuteTemplate(ti, "example/api/test/init.go", map[string]interface{}{
 		"PackageName": *packageName,
 	})
 	// main.go
@@ -204,10 +209,10 @@ func main() {
 		structNames = append(structNames, structName)
 		modelInfo := dbmeta.GenerateStruct(db, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
 		singName = inflection.Singular(tableName)
-		modelPath = fmt.Sprintf("example/model/%s.go", singName)
-		handlePath = fmt.Sprintf("example/handle/%s.go", singName)
-		routerPath = fmt.Sprintf("example/router/%s.go", singName)
-		testPath = fmt.Sprintf("example/test/%s_test.go", singName)
+		modelPath = fmt.Sprintf("example/api/model/%s.go", singName)
+		handlePath = fmt.Sprintf("example/api/handle/%s.go", singName)
+		routerPath = fmt.Sprintf("example/api/router/%s.go", singName)
+		testPath = fmt.Sprintf("example/api/test/%s_test.go", singName)
 		createFile(modelPath)
 		createFile(handlePath)
 		createFile(routerPath)
@@ -226,7 +231,7 @@ func main() {
 		routers = append(routers, fmt.Sprintf("router.%sRouter(api)", structName))
 	}
 	//main
-	ExecuteTemplateBase(ma, "example/main.go", map[string]interface{}{"PackageName": *packageName, "Routers": routers}, func(i []byte) []byte {
+	ExecuteTemplateBase(ma, "example/api/main.go", map[string]interface{}{"PackageName": *packageName, "Routers": routers}, func(i []byte) []byte {
 		str := string(i)
 		return []byte(strings.ReplaceAll(str, "`", ""))
 	})

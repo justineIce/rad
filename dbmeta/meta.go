@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -261,8 +262,8 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 		if updateDefVal != nil {
 			c.UpdateTestValue = updateDefVal
 		}
-		if Contains(primaryKey, key) {
-			c.PrimaryKey = Contains(primaryKey, key)
+		if contains(primaryKey, key) {
+			c.PrimaryKey = contains(primaryKey, key)
 		}
 		fieldName := FmtFieldName(stringifyFirstChar(key))
 		var annotations []string
@@ -281,6 +282,10 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 			annotations = append(annotations, fmt.Sprintf("json:\"%s\" form:\"%s\" query:\"%s\"", key, key, key))
 		}
 		if len(valid) > 0 {
+			v := extractValid(c.ColumnComment)
+			if v != "" {
+				valid = append(valid, v)
+			}
 			annotations = append(annotations, fmt.Sprintf("valid:\"%s\"", strings.Join(valid, ";")))
 		}
 		if c.ColumnComment != "" {
@@ -303,7 +308,17 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 	return
 }
 
-func Contains(str []string, s string) (flag bool) {
+func extractValid(str string) (v string) {
+	var reg = regexp.MustCompile(`Valid\[(.*?)]`)
+	params := reg.FindStringSubmatch(str)
+	if len(params) > 1 {
+		v = strings.TrimRight(params[1], ";")
+		return
+	}
+	return
+}
+
+func contains(str []string, s string) (flag bool) {
 	for _, value := range str {
 		if value == s {
 			flag = true
