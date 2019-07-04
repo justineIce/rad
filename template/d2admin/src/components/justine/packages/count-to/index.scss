@@ -1,0 +1,10 @@
+$prefix: 'count-to';
+.#{$prefix}-wrapper{
+  .content-outer{
+    display: inline-block;
+    margin: 0;
+    .#{$prefix}-unit-text{
+      font-style: normal;
+    }
+  }
+}

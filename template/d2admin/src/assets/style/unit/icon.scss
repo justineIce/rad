@@ -1,0 +1,57 @@
+@import '~@/assets/style/unit/fonts/iconfont.css';
+$--fonts-path: '~@/assets/style/unit/fonts' !default;
+@font-face {
+    font-family: 'jus-icons';
+    src: url('#{$--fonts-path}/iconfont.woff') format('woff'), /* chrome, firefox */
+    url('#{$--fonts-path}/iconfont.ttf') format('truetype'); /* chrome, firefox, opera, Safari, Android, iOS 4.2+*/
+    font-weight: normal;
+    font-style: normal
+}
+[class^="jus-icon-"], [class*=" jus-icon-"] {
+    font-family: 'jus-icons' !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    speak: none;
+    font-style: normal;
+    font-weight: 400;
+    font-variant: normal;
+    text-transform: none;
+    line-height: 1;
+    vertical-align: baseline;
+    display: inline-block;
+    -webkit-font-smoothing: antialiased;
+
+}
+.jus-icon-info:before { content: "\e61e"; }
+
+.jus-icon-danger:before { content: "\e645"; }
+
+.jus-icon-success:before { content: "\e644"; }
+.jus-icon-warning:before { content: "\e6d8"; }
+.jus-icon-setting:before { content: "\e786"; }
+.jus-icon-freshen:before { content: "\e794"; }
+.jus-icon-upload:before { content: "\e666"; }
+.jus-icon-delete:before { content: "\e60b"; }
+.jus-icon-file:before { content: "\e60f"; }
+.jus-icon-data:before { content: "\e61a"; }
+.jus-icon-edit:before { content: "\e696"; }
+.jus-icon-daoru:before { content: "\e616"; }
+.jus-icon-daochu:before { content: "\e61c"; }
+.jus-icon-diannao:before { content: "\e601"; }
+.jus-icon-mokuai:before { content: "\e695"; }
+.jus-icon-database:before { content: "\e620"; }
+.jus-icon-table:before { content: "\e69e"; }
+.jus-icon-catalog:before { content: "\e608"; }
+.jus-icon-zcatalog:before { content: "\e61b"; }
+.jus-icon-lock:before { content: "\e852"; }
+.jus-icon-lockopen:before { content: "\e61f"; }
+
+.jus-icon-stop:before { content: "\e686"; }
+.jus-icon-inputout:before { content: "\e63d"; }
+.jus-icon-run:before { content: "\e702"; }
+.jus-icon-save:before { content: "\e652"; }
+
+.jus-icon-replace:before { content: "\e676"; }
+.jus-icon-splice:before { content: "\e69a"; }
+
+.jus-icon-fanhui:before {content: "\e6b7";}

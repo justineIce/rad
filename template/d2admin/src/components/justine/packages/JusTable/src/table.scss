@@ -1,0 +1,89 @@
+.jus-table{
+  position: relative;
+  overflow: auto;
+  &-container{
+    width: 100%;
+    height: 100%;
+    &-table{
+      overflow: auto;
+      position: relative;
+      //el-table 样式修改
+      .el-table td, .el-table th{
+        padding: 15px 0;
+      }
+      .el-table{
+        width: 100%;
+        border: 1px solid $--table-border-color;
+        border-bottom: unset;
+        font-size: 12px;
+        color: $--table-text-color;
+        & thead{
+          color: $--table-text-color;
+          font-size: 12px;
+          .cell{
+            padding: 3px 10px;
+          }
+        }
+        & tbody{
+          .el-table__row:hover{
+            .el-button{
+              background-color: transparent;
+              background: transparent;
+            }
+          }
+          .el-button{
+            @extend %table-button;
+          }
+          .el-button:hover{
+            background-color: transparent;
+            background: transparent;
+          }
+          .cell{
+            line-height: 18px;
+          }
+        }
+        .el-table-column--selection .cell {
+          padding-left: 10px;
+        }
+        .el-checkbox{
+          .el-checkbox__inner{
+            width: 16px;
+            height: 16px;
+          }
+        }
+        .el-table__empty-block{
+          .el-table__empty-text{
+            font-size: 12px;
+            line-height: 17px;
+            color: $--table-text-color;
+          }
+        }
+
+        .el-input__inner{
+          border-radius: 0;
+          padding: 0 12px;
+          height: $--form-item-height;
+          line-height: $--form-item-height;
+          &:hover{
+            border: 1px solid $theme-color;
+          }
+        }
+        .el-textarea__inner{
+          &:hover{
+            border: 1px solid $theme-color;
+          }
+        }
+        .el-select-dropdown__item.selected{
+          color: $theme-color;
+        }
+      }
+    }
+    .el-table__expanded-cell[class*=cell] {
+      padding: 20px 50px;
+    }
+    &-pagination{
+      margin: 20px 0;
+      background: #FFF;
+    }
+  }
+}
