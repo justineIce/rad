@@ -1,23 +1,18 @@
 package main
 
 import (
-	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/devopsmi/rad/dbmeta"
 	"github.com/devopsmi/rad/util"
-	"go/format"
-	"io/ioutil"
-	"os"
-	"strings"
-	"text/template"
-
 	"github.com/droundy/goopt"
 	"github.com/jimsmart/schema"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/jinzhu/inflection"
-	"github.com/serenize/snaker"
+	"os"
+	"strings"
+	"text/template"
 )
 
 var (
@@ -34,6 +29,7 @@ var (
 	jsonAnnotation = goopt.Flag([]string{"--json"}, []string{"--no-json"}, "添加json标记，默认：json", "禁用json标记")
 	gormAnnotation = goopt.Flag([]string{"--gorm"}, []string{}, "添加gorm标记，默认：gorm", "")
 	gureguTypes    = goopt.Flag([]string{"--guregu"}, []string{}, "支持可为空值的字段类型，默认：guregu", "")
+	projectName    string //项目名称，根据包名生成
 )
 
 func init() {
@@ -67,6 +63,13 @@ func main() {
 		GOPATH = strings.Replace(GOPATH, "\\", "/", -1)
 	}
 	curPath := getCurrentPath()
+	var packageNameImportUrl string
+	if packageName == nil || *packageName == "" {
+		packageNameImportUrl = fmt.Sprintf("%s/example", strings.ReplaceAll(curPath, fmt.Sprintf("%s/src/", GOPATH), ""))
+	}
+	projectName = packageNameImportUrl[strings.LastIndex(packageNameImportUrl, "/")+1:]
+
+	//获取表信息
 	var db, err = sql.Open(*sqlType, getDSN())
 	if err != nil {
 		fmt.Println("Error in open database: " + err.Error())
@@ -84,122 +87,55 @@ func main() {
 			return
 		}
 	}
-	// if packageName is not set we need to default it
-	if packageName == nil || *packageName == "" {
-		*packageName = fmt.Sprintf("%s/example/api", strings.ReplaceAll(curPath, fmt.Sprintf("%s/src/", GOPATH), ""))
+
+	generateFrontend(curPath,curPath+"/"+projectName)
+	generateBackend(curPath,curPath+"/"+projectName)
+
+
+
+	tempData := map[string]interface{}{
+		"PackageName": packageNameImportUrl,
 	}
-	// global init.go
-	data, err := readAll("template/globalInit.tpl")
-	if err != nil {
-		panic(err)
+	tc := []tempConfig{
+		{
+			sourcePath: "template/globalInit.tpl",
+			targetPath: "example/manage-api/global/init.go",
+			data:       tempData,
+		},
+		{
+			sourcePath: "template/configtoml.tpl",
+			targetPath: "example/manage-api/config/config.toml",
+			data: map[string]interface{}{
+				"host":       dbHost,
+				"port":       dbPort,
+				"user":       dbUser,
+				"password":   dbPassword,
+				"name":       dbName,
+				"parameters": dbParameters,
+			},
+			afterFunc: func(i []byte) []byte {
+				str := string(i)
+				return []byte(strings.ReplaceAll(str, "`", ""))
+			},
+		},
+		{
+			sourcePath: "template/testInit.tpl",
+			targetPath: "example/manage-api/test/init.go",
+			data:       tempData,
+		},
 	}
-	gi := getTemplate(string(data))
-	ExecuteTemplate(gi, "example/api/global/init.go", map[string]interface{}{
-		"PackageName": *packageName,
-	})
-	// utils
-	// validation
-	_, err = util.Copy(curPath+"/template/validation", curPath+"/example/api/utils/validation", "")
-	if err != nil {
-		panic(err)
-	}
-	// manage style
-	_, err = util.Copy(fmt.Sprintf("%s/template/%s", curPath, *manageStyle), curPath+"/example/manage", curPath+"/uncopy.txt")
-	if err != nil {
-		panic(err)
-	}
-	// uuid.go
-	data, err = readAll("template/uuid.tpl")
-	if err != nil {
-		panic(err)
-	}
-	createFileContent("example/api/utils/uuid.go", string(data))
-	// echo bind.go
-	data, err = readAll("template/bind.tpl")
-	if err != nil {
-		panic(err)
-	}
-	createFileContent("example/api/handle/bind.go", string(data))
-	//result
-	data, err = readAll("template/result.tpl")
-	if err != nil {
-		panic(err)
-	}
-	createFileContent("example/api/utils/result.go", string(data))
-	//gorm
-	data, err = readAll("template/gorm.tpl")
-	if err != nil {
-		panic(err)
-	}
-	createFileContent("example/api/utils/gorm.go", string(data))
-	//page
-	data, err = readAll("template/page.tpl")
-	if err != nil {
-		panic(err)
-	}
-	createFileContent("example/api/model/page.go", string(data))
-	// config.go
-	data, err = readAll("template/config.tpl")
-	if err != nil {
-		panic(err)
-	}
-	createFileContent("example/api/config/config.go", string(data))
-	// config.toml
-	data, err = readAll("template/configtoml.tpl")
-	if err != nil {
-		panic(err)
-	}
-	cft := getTemplate(string(data))
-	ExecuteTemplateBase(cft, "example/api/config/config.toml", map[string]interface{}{
-		"host":       dbHost,
-		"port":       dbPort,
-		"user":       dbUser,
-		"password":   dbPassword,
-		"name":       dbName,
-		"parameters": dbParameters,
-	}, func(i []byte) []byte {
-		str := string(i)
-		return []byte(strings.ReplaceAll(str, "`", ""))
-	})
+	executeTemplate(tc)
+
 	// model
-	data, err = readAll("template/model.tpl")
-	if err != nil {
-		panic(err)
-	}
-	m := getTemplate(string(data))
+	m := getTemplate("template/model.tpl")
 	// handle
-	data, err = readAll("template/handle.tpl")
-	if err != nil {
-		panic(err)
-	}
-	h := getTemplate(string(data))
+	h := getTemplate("template/handle.tpl")
 	// router
-	data, err = readAll("template/router.tpl")
-	if err != nil {
-		panic(err)
-	}
-	r := getTemplate(string(data))
+	r := getTemplate("template/router.tpl")
 	// test
-	data, err = readAll("template/test.tpl")
-	if err != nil {
-		panic(err)
-	}
-	t := getTemplate(string(data))
-	// test init.go
-	data, err = readAll("template/testInit.tpl")
-	if err != nil {
-		panic(err)
-	}
-	ti := getTemplate(string(data))
-	ExecuteTemplate(ti, "example/api/test/init.go", map[string]interface{}{
-		"PackageName": *packageName,
-	})
+	t := getTemplate("template/test.tpl")
 	// main.go
-	data, err = readAll("template/main.tpl")
-	if err != nil {
-		panic(err)
-	}
-	ma := getTemplate(string(data))
+	ma := getTemplate("template/main.tpl")
 
 	var structNames, routers []string
 	var modelPath, handlePath, routerPath, testPath, singName string
@@ -210,149 +146,81 @@ func main() {
 		structNames = append(structNames, structName)
 		modelInfo := dbmeta.GenerateStruct(db, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
 		singName = inflection.Singular(tableName)
-		modelPath = fmt.Sprintf("example/api/model/%s.go", singName)
-		handlePath = fmt.Sprintf("example/api/handle/%s.go", singName)
-		routerPath = fmt.Sprintf("example/api/router/%s.go", singName)
-		testPath = fmt.Sprintf("example/api/test/%s_test.go", singName)
-		createFile(modelPath)
-		createFile(handlePath)
-		createFile(routerPath)
-		createFile(testPath)
+		modelPath = fmt.Sprintf("example/manage-api/model/%s.go", singName)
+		handlePath = fmt.Sprintf("example/manage-api/handle/%s.go", singName)
+		routerPath = fmt.Sprintf("example/manage-api/router/%s.go", singName)
+		testPath = fmt.Sprintf("example/manage-api/test/%s_test.go", singName)
+		util.CreateFile(modelPath)
+		util.CreateFile(handlePath)
+		util.CreateFile(routerPath)
+		util.CreateFile(testPath)
 		//model
-		ExecuteTemplate(m, modelPath, modelInfo)
+		util.ExecuteTemplate(m, modelPath, modelInfo)
 		//handle
-		ExecuteTemplate(h, handlePath, map[string]string{"PackageName": *packageName, "StructName": structName,
+		util.ExecuteTemplate(h, handlePath, map[string]string{"PackageName": packageNameImportUrl, "StructName": structName,
 			"singName": dbmeta.FmtFieldName2(tableName), "TableRemark": modelInfo.TableRemark})
 		//test
-		ExecuteTemplate(t, testPath, map[string]interface{}{"PackageName": *packageName, "StructName": structName,
+		util.ExecuteTemplate(t, testPath, map[string]interface{}{"PackageName": packageNameImportUrl, "StructName": structName,
 			"SingName": singName, "FieldDefVal": modelInfo.FieldDefVal, "Columns": modelInfo.Columns})
 		//router
-		ExecuteTemplate(r, routerPath, map[string]string{"PackageName": *packageName, "StructName": structName, "SingName": singName})
+		util.ExecuteTemplate(r, routerPath, map[string]string{"PackageName": packageNameImportUrl, "StructName": structName, "SingName": singName})
 		// add router
 		routers = append(routers, fmt.Sprintf("router.%sRouter(api)", structName))
 	}
 	//main
-	ExecuteTemplateBase(ma, "example/api/main.go", map[string]interface{}{"PackageName": *packageName, "Routers": routers}, func(i []byte) []byte {
+	util.ExecuteTemplateBase(ma, "example/manage-api/main.go", map[string]interface{}{"PackageName": packageNameImportUrl, "Routers": routers}, func(i []byte) []byte {
 		str := string(i)
 		return []byte(strings.ReplaceAll(str, "`", ""))
 	})
 }
 
-func ExecuteTemplate(t *template.Template, path string, m interface{}) {
-	ExecuteTemplateBase(t, path, m, nil)
-	return
+//生成前端框架
+func generateFrontend(curPath, targetPath string) {
+	// 默认d2admin
+	_, err := util.Copy(fmt.Sprintf("%s/template/frontend/%s", curPath, *manageStyle), targetPath+"/example/manage", curPath+"/uncopy.txt")
+	if err != nil {
+		panic(err)
+	}
 }
 
-func ExecuteTemplateBase(t *template.Template, path string, m interface{}, before func([]byte) []byte) {
-	//判断是否存在文件
-	flag, _ := pathExists(path)
-	if !flag {
-		f, err := createFile(path)
+//生成后端框架
+func generateBackend(curPath string, targetPath string) {
+	// 默认echo
+	_, err := util.Copy(fmt.Sprintf("%s/template/backend/", curPath), curPath+"/example/manage", curPath+"/uncopy.txt")
+	if err != nil {
+		panic(err)
+	}
+}
+
+func getTemplate(tempPath string) *template.Template {
+	data, err := util.ReadAll(tempPath)
+	if err != nil {
+		panic(err)
+	}
+	return util.GetTemplate(string(data))
+}
+
+func executeTemplate(temps []tempConfig) {
+	var data []byte
+	var err error
+	var tm *template.Template
+	for _, value := range temps {
+		data, err = util.ReadAll(value.sourcePath)
 		if err != nil {
 			panic(err)
 		}
-		f.Close()
+		tm = util.GetTemplate(string(data))
+		if value.afterFunc != nil {
+			util.ExecuteTemplateBase(tm, value.targetPath, value.data, value.afterFunc)
+		} else {
+			util.ExecuteTemplate(tm, value.targetPath, value.data)
+		}
 	}
-	var buf bytes.Buffer
-	err := t.Execute(&buf, m)
-	if err != nil {
-		panic(err)
-		return
-	}
-	b, err := format.Source(buf.Bytes())
-	if err != nil {
-		panic(err)
-		return
-	}
-	if before != nil {
-		b = before(b)
-	}
-	err = ioutil.WriteFile(path, b, 0777)
-	return
 }
 
-func getTemplate(t string) (tmpl *template.Template) {
-	var funcMap = template.FuncMap{
-		"pluralize":        inflection.Plural,
-		"title":            strings.Title,
-		"toLower":          strings.ToLower,
-		"toLowerCamelCase": camelToLowerCamel,
-		"toSnakeCase":      snaker.CamelToSnake,
-	}
-	tmpl, err := template.New("model").Funcs(funcMap).Parse(t)
-	if err != nil {
-		panic(err)
-		return
-	}
-	return
-}
-
-func camelToLowerCamel(s string) string {
-	ss := strings.Split(s, "")
-	ss[0] = strings.ToLower(ss[0])
-
-	return strings.Join(ss, "")
-}
-
-func createFile(path string) (*os.File, error) {
-	i := strings.LastIndex(path, "/")
-	dir := string([]rune(path)[0:i])
-	mErr := mkdirAll(dir)
-	if mErr != nil {
-		return nil, mErr
-	}
-	file, err := os.Create(path)
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
-}
-
-func createFileContent(path, data string) (err error) {
-	f, err := createFile(path)
-	defer f.Close()
-	if err != nil {
-		return
-	}
-	f.WriteString(data)
-	return
-}
-
-func pathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
-}
-
-func mkdirAll(path string) error {
-	if os.IsPathSeparator('\\') { //前边的判断是否是系统的分隔符
-		path = strings.Replace(path, "/", "\\", -1)
-	}
-	flog, err := pathExists(path)
-	if err != nil {
-		return err
-	}
-	if flog {
-		return nil
-	}
-	err2 := os.MkdirAll(path, os.ModePerm)
-
-	if err2 != nil {
-		return err2
-	}
-	return nil
-}
-
-func readAll(filePth string) ([]byte, error) {
-	f, err := os.Open(filePth)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-	return ioutil.ReadAll(f)
+type tempConfig struct {
+	sourcePath string
+	targetPath string
+	data       map[string]interface{}
+	afterFunc  func(i []byte) []byte
 }

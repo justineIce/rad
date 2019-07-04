@@ -228,7 +228,7 @@ func (v *Validation) apply(chk Validator, obj interface{}, alias string) *Result
 		Name = parts[1]
 	}
 
-	zhName := Name
+	zhName := Field
 	if alias != "" {
 		zhName = alias
 	}
@@ -404,4 +404,20 @@ func (v *Validation) CanSkipAlso(skipFunc string) {
 	if _, ok := CanSkipFuncs[skipFunc]; !ok {
 		CanSkipFuncs[skipFunc] = struct{}{}
 	}
+}
+
+//Valid 结构体验证
+func Valid(st interface{}) (errs []string) {
+	validate := Validation{}
+	flag, err := validate.Valid(st)
+	if err != nil {
+		println(err)
+		return append(errs, err.Error())
+	}
+	if !flag {
+		for _, err := range validate.Errors {
+			errs = append(errs, err.ZhName+err.Message)
+		}
+	}
+	return
 }

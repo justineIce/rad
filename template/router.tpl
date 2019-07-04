@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/labstack/echo"
-	"{{.PackageName}}/handle"
+	"{{.PackageName}}/manage-api/handle"
 )
 
 func {{.StructName}}Router(e *echo.Group) {

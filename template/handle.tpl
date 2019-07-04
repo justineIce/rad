@@ -2,7 +2,7 @@ package handle
 
 import (
 	"github.com/labstack/echo"
-	"{{.PackageName}}/global"
+	"{{.PackageName}}/manage-api/global"
 	"{{.PackageName}}/model"
 	"{{.PackageName}}/utils"
 )

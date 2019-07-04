@@ -3,7 +3,7 @@ package test
 import (
 	"github.com/labstack/echo"
 	"github.com/stretchr/testify/assert"
-	"{{.PackageName}}/handle"
+	"{{.PackageName}}/manage-api/handle"
 	"{{.PackageName}}/utils"
 	"net/http"
 	"net/http/httptest"

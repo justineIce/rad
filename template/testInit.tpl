@@ -1,6 +1,6 @@
 package test
 
-import "{{.PackageName}}/global"
+import "{{.PackageName}}/api/global"
 
 func init() {
 	global.InitGlobal(&global.ConfPath{

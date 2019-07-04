@@ -2,7 +2,7 @@ package global
 
 import (
 	"github.com/jinzhu/gorm"
-	"{{.PackageName}}/config"
+	"{{.PackageName}}/utils/config"
 	"{{.PackageName}}/utils/validation"
 	"time"
 	"gopkg.in/go-playground/validator.v9"
