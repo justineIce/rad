@@ -8,7 +8,6 @@ import (
 )
 
 // {{.TableRemark}}获取单条数据
-// @Param {paramName} query string false "{paramDesc}"
 func Get{{.StructName}}(c echo.Context) error {
 	id := c.FormValue("id")
 	var {{.singName}} model.{{.StructName}}
@@ -20,7 +19,6 @@ func Get{{.StructName}}(c echo.Context) error {
 }
 
 // {{.TableRemark}}获取所有数据
-// @Param {paramName} query string false "{paramDesc}"
 func Get{{.StructName}}All(c echo.Context) error {
 	id := c.FormValue("id")
 	var {{.singName}} []model.{{.StructName}}
@@ -32,7 +30,6 @@ func Get{{.StructName}}All(c echo.Context) error {
 }
 
 // {{.TableRemark}}获取分页数据
-// @Param {paramName} query string false "{paramDesc}"
 func Get{{.StructName}}Page(c echo.Context) error {
 	db := global.DB.Model(&model.{{.StructName}}{}).Order("id DESC")
 	/*	条件搜索范例

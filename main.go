@@ -30,6 +30,7 @@ var (
 	dbParameters   = goopt.String([]string{"--dbParameters"}, "charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true", "数据库连接字符串，默认：charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true")
 	sqlTable       = goopt.String([]string{"--table"}, "", "需要转换的表名，默认：*")
 	packageName    = goopt.String([]string{"--package"}, "", "指定项目包名，默认：当前执行路径/example")
+	manageStyle    = goopt.String([]string{"--manageStyle"}, "d2admin", "后台模板框架，默认：d2admin")
 	jsonAnnotation = goopt.Flag([]string{"--json"}, []string{"--no-json"}, "添加json标记，默认：json", "禁用json标记")
 	gormAnnotation = goopt.Flag([]string{"--gorm"}, []string{}, "添加gorm标记，默认：gorm", "")
 	gureguTypes    = goopt.Flag([]string{"--guregu"}, []string{}, "支持可为空值的字段类型，默认：guregu", "")
@@ -85,7 +86,7 @@ func main() {
 	}
 	// if packageName is not set we need to default it
 	if packageName == nil || *packageName == "" {
-		*packageName = fmt.Sprintf("%s/example", strings.ReplaceAll(curPath, fmt.Sprintf("%s/src/", GOPATH), ""))
+		*packageName = fmt.Sprintf("%s/example/api", strings.ReplaceAll(curPath, fmt.Sprintf("%s/src/", GOPATH), ""))
 	}
 	// global init.go
 	data, err := readAll("template/globalInit.tpl")
@@ -102,8 +103,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	// manage
-	_, err = util.Copy(curPath+"/template/manage", curPath+"/example/manage", curPath+"/uncopy.txt")
+	// manage style
+	_, err = util.Copy(fmt.Sprintf("%s/template/%s", curPath, *manageStyle), curPath+"/example/manage", curPath+"/uncopy.txt")
 	if err != nil {
 		panic(err)
 	}
