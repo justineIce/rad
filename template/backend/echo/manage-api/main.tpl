@@ -3,12 +3,14 @@
 import (
 	"context"
 	"fmt"
+	"{{.PackageName}}/manage-api/global"
+	"{{.PackageName}}/manage-api/handle"
+	"{{.PackageName}}/manage-api/router"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo"
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
-	"{{.PackageName}}/manage-api/global"
-	"{{.PackageName}}/manage-api/router"
-	"{{.PackageName}}/manage-api/handle"
 	"os"
 	"os/signal"
 	"time"
@@ -23,8 +25,10 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.RequestID())
+	e.Use(session.Middleware(sessions.NewCookieStore([]byte("16a2t6WKgSlsdf75N40SFOhglShSJfg0ua8OnZ"))))
 
 	api := e.Group("/api")
+	api.GET("/img/code", handle.VerificationCode)
 	auth := api.Group("/auth", handle.Filter)
     {
         // ===== router start =====

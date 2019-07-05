@@ -18,13 +18,8 @@ module.exports = {
     disableHostCheck: true,
     proxy: {
       '/api': {
-        //target: 'http://192.168.2.58:8085/',
-        target: 'http://192.168.2.59:8085/',
-        //target: 'http://192.168.2.113:8085/',
-        changeOrigin: true,
-        pathRewrite: {
-          '^/api': ''
-        }
+        target: 'http://127.0.0.1:8081/',
+        changeOrigin: true
       }
     }
   },
