@@ -1,8 +1,7 @@
-package redis
+package config
 
 import (
 	"github.com/garyburd/redigo/redis"
-	"../config"
 	"time"
 )
 
@@ -10,7 +9,7 @@ type RedisConnPool struct {
 	redisPool *redis.Pool
 }
 
-func InitRedis(red config.Redis) *RedisConnPool {
+func InitRedis(red Redis) *RedisConnPool {
 	var Cache = &RedisConnPool{}
 	Cache.redisPool = newPool(red.Addr, red.Password, red.Database, red.MaxOpenConns, red.MaxIdleConns)
 

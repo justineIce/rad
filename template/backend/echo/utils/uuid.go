@@ -2,8 +2,10 @@ package utils
 
 import (
 	"fmt"
+	"github.com/satori/go.uuid"
 	"math/rand"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -60,4 +62,12 @@ func (id *RandID) nextId() int64 {
 
 func ID() int64 {
 	return randID.NextId()
+}
+
+func IDString() string {
+	id, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+	return strings.Replace(fmt.Sprintf("%s", id), "-", "", -1)
 }

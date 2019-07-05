@@ -5,3 +5,4 @@ template\manage\.idea\
 \manage\.idea\
 \node_modules\
 \idea\
+.tpl

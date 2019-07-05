@@ -69,8 +69,8 @@ func Save{{.StructName}}(c echo.Context) error {
 		}
 		isFlag = true
 	}else{
-		//新增
-		{{.singName}}.ID = utils.ID()
+		//新增 {{.IDPrimaryKeyInt}}
+		{{if .IDPrimaryKeyInt }}{{.singName}}.ID = utils.ID(){{else}}{{.singName}}.ID = utils.IDString(){{end}}
 	}
 	//需限制入参参数
 	if err := new(utils.CustomBinder).Bind(&{{.singName}}, c); err != nil {
@@ -103,9 +103,15 @@ func Del{{.StructName}}(c echo.Context) error {
 	if err := c.Bind({{.singName}}); err != nil {
 		return utils.ErrorNull(c, utils.GetParsFailResult)
 	}
+	{{if .IDPrimaryKeyInt }}
 	if {{.singName}}.ID < 0 {
-		return utils.ErrorNull(c, utils.DeleteFailResult)
-	}
+    	return utils.ErrorNull(c, utils.DeleteFailResult)
+    }
+    {{else}}
+    if {{.singName}}.ID == "" {
+        return utils.ErrorNull(c, utils.DeleteFailResult)
+    }
+    {{end}}
 	if err := global.DB.Delete({{.singName}}).Error; err != nil {
 		c.Logger().Errorf("Del{{.StructName}} error：%v", err)
 		return utils.ErrorNull(c, utils.DeleteFailResult)

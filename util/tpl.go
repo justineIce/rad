@@ -11,6 +11,39 @@ import (
 	"text/template"
 )
 
+type TemplateConfig struct {
+	SourcePath string
+	TargetPath string
+	Data       map[string]interface{}
+	AfterFunc  func(i []byte) []byte
+}
+
+func GetTemplateByPath(path string) *template.Template {
+	data, err := ReadAll(path)
+	if err != nil {
+		panic(err)
+	}
+	return GetTemplate(string(data))
+}
+
+func ExecuteTemplateConf(temps []TemplateConfig) {
+	var data []byte
+	var err error
+	var tm *template.Template
+	for _, value := range temps {
+		data, err = ReadAll(value.SourcePath)
+		if err != nil {
+			panic(err)
+		}
+		tm = GetTemplate(string(data))
+		if value.AfterFunc != nil {
+			ExecuteTemplateBase(tm, value.TargetPath, value.Data, value.AfterFunc)
+		} else {
+			ExecuteTemplate(tm, value.TargetPath, value.Data)
+		}
+	}
+}
+
 func ExecuteTemplate(t *template.Template, path string, m interface{}) {
 	ExecuteTemplateBase(t, path, m, nil)
 	return

@@ -20,6 +20,7 @@ type ModelInfo struct {
 	PrimaryKey      []string
 	FieldDefVal     map[string]interface{}
 	Columns         []*ColumnInfo
+	IDPrimaryKeyInt bool
 }
 
 // commonInitialisms is a set of common initialisms.
@@ -232,7 +233,7 @@ func GenerateStruct(db *sql.DB, dbName string, tableName string, structName stri
 	tableRemark, _ := GetTableRemark(db, dbName, tableName)
 	//primaryKey, _ := GetTablePrimaryKey(db, dbName, tableName)
 	fieldDef, primaryKey, _ := GetTableDesc(db, tableName)
-	fields := generateFieldsTypes(cols, fieldDef, primaryKey, jsonAnnotation, gormAnnotation, gureguTypes)
+	fields, idPrimaryKeyInt := generateFieldsTypes(cols, fieldDef, primaryKey, jsonAnnotation, gormAnnotation, gureguTypes)
 	var modelInfo = &ModelInfo{
 		PackageName:     pkgName,
 		StructName:      structName,
@@ -242,16 +243,26 @@ func GenerateStruct(db *sql.DB, dbName string, tableName string, structName stri
 		Fields:          fields,
 		PrimaryKey:      primaryKey,
 		Columns:         cols,
+		IDPrimaryKeyInt: idPrimaryKeyInt,
 	}
 	return modelInfo
 }
 
 // Generate fields string
 func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{}, primaryKey []string, jsonAnnotation bool,
-	gormAnnotation bool, gureguTypes bool) (fields []string) {
+	gormAnnotation bool, gureguTypes bool) (fields []string, idPrimaryKeyInt bool) {
 	var field = ""
 	for _, c := range columns {
 		key := c.ColumnName
+
+		if strings.ToLower(key) == "id" {
+			switch strings.ToLower(c.DataType) {
+			case "tinyint", "int", "smallint", "mediumint", "bigint":
+				idPrimaryKeyInt = true
+				break
+			}
+		}
+
 		valueType, valid, addDefVal, updateDefVal := sqlTypeToGoType(c, gureguTypes)
 		if valueType == "" { // unknown type
 			continue

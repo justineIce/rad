@@ -1,10 +1,10 @@
 package utils
 
 import (
-	"./convert"
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"time"
 
 	"strings"
@@ -27,7 +27,7 @@ func CheckType(value interface{}, expectType string) bool {
 
 //检查int数据的区间（开区间）
 func CheckIntRange(value interface{}, min, max int) bool {
-	if val, err := convert.ToInt(value); err != nil {
+	if val, err := strconv.Atoi(fmt.Sprintf("%v", value)); err != nil {
 		return false
 	} else {
 		return min <= val && val <= max
@@ -40,7 +40,7 @@ func CheckFloat64Range(value interface{}, min, max float64) bool {
 		return false
 	}
 
-	if val, err := convert.ToFloat64(value); err != nil {
+	if val, err := strconv.ParseFloat(fmt.Sprintf("%v", value), 64); err != nil {
 		return false
 	} else {
 		return min <= val && val <= max
@@ -51,7 +51,7 @@ func CheckFloat64Range(value interface{}, min, max float64) bool {
 func CheckRegexp(value interface{}, rex string) bool {
 	val, ok := value.(string)
 	if !ok {
-		val = convert.MustString(value)
+		val = fmt.Sprintf("%v", value)
 	}
 	reg := regexp.MustCompile(rex)
 	return reg.MatchString(val)
@@ -74,7 +74,7 @@ func CheckIPv4(value interface{}) bool {
 
 //检查传入值是否是实数（包括表示实数的字符串）
 func CheckRealNumber(value interface{}) bool {
-	val := convert.MustString(value)
+	val := fmt.Sprintf("%v", value)
 	return CheckRegexp(val, regularNumber)
 }
 
@@ -91,112 +91,6 @@ func CheckLen(value interface{}, length int) bool {
 			case reflect.Slice, reflect.Array, reflect.Map:
 				{
 					return refValue.Len() == length
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-//检查传入的数值的下限,基本上支持各种类型
-func CheckMin(value interface{}, min float64) bool {
-	switch value.(type) {
-	case string:
-		{
-			res, err := convert.ToFloat64(value)
-			if err == nil {
-				return res > float64(min)
-			}
-		}
-	case int, int8, int16, int32, int64:
-		{
-			return convert.MustInt64(value) >= int64(min)
-		}
-	case uint, uint8, uint16, uint32, uint64:
-		{
-			return convert.MustUint64(value) >= uint64(min)
-		}
-	case float32, float64:
-		{
-			return convert.MustFloat64(value) >= float64(min)
-		}
-	default:
-		{
-			return CheckMin(convert.MustString(value), min)
-		}
-	}
-	return false
-}
-
-//检查传入的数值的上限,基本上支持各种类型
-func CheckMax(value interface{}, max float64) bool {
-	switch value.(type) {
-	case string:
-		{
-			res, err := convert.ToFloat64(value)
-			if err == nil {
-				return res <= float64(max)
-			}
-		}
-	case int, int8, int16, int32, int64:
-		{
-			return convert.MustInt64(value) <= int64(max)
-		}
-	case uint, uint8, uint16, uint32, uint64:
-		{
-			return convert.MustUint64(value) <= uint64(max)
-		}
-	case float32, float64:
-		{
-			return convert.MustFloat64(value) <= float64(max)
-		}
-	default:
-		{
-			return CheckMin(convert.MustString(value), max)
-		}
-	}
-	return false
-}
-
-// 检查传入的值的长度，仅支持string、slice或者map
-// 计算String的时候，以正则实现，中文字符算长度1
-func CheckMaxSize(value interface{}, maxSize int) bool {
-	switch value.(type) {
-	case string:
-		{
-			return CheckRegexp(value, fmt.Sprintf("^.{0,%d}$", maxSize))
-		}
-	default:
-		{
-			refValue := reflect.ValueOf(value)
-			switch refValue.Kind() {
-			case reflect.Slice, reflect.Array, reflect.Map:
-				{
-					return refValue.Len() <= maxSize
-				}
-			}
-		}
-	}
-
-	return false
-}
-
-//检查传入的值的长度，仅支持string、slice或者map
-// 计算String的时候，以正则实现，中文字符算长度1
-func CheckMinSize(value interface{}, minSize int) bool {
-	switch value.(type) {
-	case string:
-		{
-			return CheckRegexp(value, fmt.Sprintf("^.{%d,}$", minSize))
-		}
-	default:
-		{
-			refValue := reflect.ValueOf(value)
-			switch refValue.Kind() {
-			case reflect.Slice, reflect.Array, reflect.Map:
-				{
-					return refValue.Len() >= minSize
 				}
 			}
 		}

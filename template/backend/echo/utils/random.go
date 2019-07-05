@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"./convert"
-	"./ulid"
 	"fmt"
 	"math"
 	"math/rand"
@@ -33,22 +31,6 @@ func (rd Random) String(length int) string {
 		d = append(d, b[r.Intn(62)])
 	}
 	return string(d)
-}
-
-// ULID random ulid
-func (rd Random) ULID() string {
-	t := time.Now()
-	entrop := rand.New(rand.NewSource(t.UnixNano()))
-	return ulid.MustNew(ulid.Timestamp(t), entrop).String()
-}
-
-func (rd Random) NumberByFloat(start, end float64) float64 {
-	r := rand.New(rand.NewSource(ID()))
-	min := convert.MustInt(start * 100)
-	max := convert.MustInt(end * 100)
-	n := min + r.Intn(max-min+1)
-	f := float64(n) / float64(100)
-	return convert.MustFloat64(fmt.Sprintf("%.2f", f))
 }
 
 func (rd Random) NumberByInt(start, end int) int {

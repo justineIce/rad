@@ -5,31 +5,27 @@ import (
 	"github.com/astaxie/beego/logs"
 )
 
-// GormConfig Gorm配置文件
-type LogConfig struct {
-	Level    int
-	Path     string
-	MaxDays  int
-	Separate string
-}
-
-func NewLog(c *LogConfig) *logs.BeeLogger {
-	conf := fmt.Sprintf(
+func InitLog(logConf Log) *logs.BeeLogger {
+	var Logger = logs.GetBeeLogger()
+	c := fmt.Sprintf(
 		`{
 			"filename": "%s",
 			"maxdays": %d,
-			"daily": true,
-			"rotate": true,
+			"daily": %s,
+			"rotate": %s,
 			"level": %d,
 			"separate": "[%s]"
 		}`,
-		c.Path,
-		c.MaxDays,
-		c.Level,
-		c.Separate,
+		logConf.Path,
+		logConf.MaxDays,
+		"true",
+		"true",
+		logConf.Level,
+		logConf.Separate,
 	)
-	logs.SetLogger(logs.AdapterMultiFile, conf)
+
+	logs.SetLogger(logs.AdapterMultiFile, c)
 	logs.SetLogger("console")
 	logs.EnableFuncCallDepth(true)
-	return logs.GetBeeLogger()
+	return Logger
 }

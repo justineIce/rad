@@ -12,24 +12,28 @@ import (
 	"github.com/jinzhu/inflection"
 	"os"
 	"strings"
-	"text/template"
 )
 
 var (
-	sqlType        = goopt.String([]string{"--sqltype"}, "mysql", "数据库类型，默认：mysql")
-	dbHost         = goopt.String([]string{"--dbHost"}, "127.0.0.1", "数据库主机地址，默认：127.0.0.1")
-	dbPort         = goopt.String([]string{"--dbPort"}, "3306", "数据库端口，默认：3306")
-	dbUser         = goopt.String([]string{"--dbUser"}, "root", "数据库的用户名，默认：root")
-	dbPassword     = goopt.String([]string{"--dbPassword"}, "123456", "数据库的密码，默认：123456")
-	dbName         = goopt.String([]string{"--dbName"}, "test", "数据库名称，默认：test")
-	dbParameters   = goopt.String([]string{"--dbParameters"}, "charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true", "数据库连接字符串，默认：charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true")
-	sqlTable       = goopt.String([]string{"--table"}, "", "需要转换的表名，默认：*")
-	packageName    = goopt.String([]string{"--package"}, "", "指定项目包名，默认：当前执行路径/example")
-	manageStyle    = goopt.String([]string{"--manageStyle"}, "d2admin", "后台模板框架，默认：d2admin")
-	jsonAnnotation = goopt.Flag([]string{"--json"}, []string{"--no-json"}, "添加json标记，默认：json", "禁用json标记")
-	gormAnnotation = goopt.Flag([]string{"--gorm"}, []string{}, "添加gorm标记，默认：gorm", "")
-	gureguTypes    = goopt.Flag([]string{"--guregu"}, []string{}, "支持可为空值的字段类型，默认：guregu", "")
-	projectName    string //项目名称，根据包名生成
+	sqlType              = goopt.String([]string{"--sqltype"}, "mysql", "数据库类型，默认：mysql")
+	dbHost               = goopt.String([]string{"--dbHost"}, "127.0.0.1", "数据库主机地址，默认：127.0.0.1")
+	dbPort               = goopt.String([]string{"--dbPort"}, "3306", "数据库端口，默认：3306")
+	dbUser               = goopt.String([]string{"--dbUser"}, "root", "数据库的用户名，默认：root")
+	dbPassword           = goopt.String([]string{"--dbPassword"}, "123456", "数据库的密码，默认：123456")
+	dbName               = goopt.String([]string{"--dbName"}, "test", "数据库名称，默认：test")
+	dbParameters         = goopt.String([]string{"--dbParameters"}, "charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true", "数据库连接字符串，默认：charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true")
+	sqlTable             = goopt.String([]string{"--table"}, "", "需要转换的表名，默认：*")
+	packageName          = goopt.String([]string{"--package"}, "", "指定项目包名，默认：当前执行路径/example")
+	target               = goopt.String([]string{"--target"}, "", "指定保存目录")
+	frontend             = goopt.String([]string{"--frontend"}, "d2admin", "前端模板框架，默认：d2admin")
+	backend              = goopt.String([]string{"--backend"}, "echo", "后端模板框架，默认：echo")
+	jsonAnnotation       = goopt.Flag([]string{"--json"}, []string{"--no-json"}, "添加json标记，默认：json", "禁用json标记")
+	gormAnnotation       = goopt.Flag([]string{"--gorm"}, []string{}, "添加gorm标记，默认：gorm", "")
+	gureguTypes          = goopt.Flag([]string{"--guregu"}, []string{}, "支持可为空值的字段类型，默认：guregu", "")
+	projectName          string //项目名称，根据包名生成
+	packageNameImportURL string //包导入URL
+	targetPath           string //项目存放路径
+	DB                   *sql.DB
 )
 
 func init() {
@@ -63,49 +67,83 @@ func main() {
 		GOPATH = strings.Replace(GOPATH, "\\", "/", -1)
 	}
 	curPath := getCurrentPath()
-	var packageNameImportUrl string
 	if packageName == nil || *packageName == "" {
-		packageNameImportUrl = fmt.Sprintf("%s/example", strings.ReplaceAll(curPath, fmt.Sprintf("%s/src/", GOPATH), ""))
+		packageNameImportURL = fmt.Sprintf("%s/example", strings.ReplaceAll(curPath, fmt.Sprintf("%s/src/", GOPATH), ""))
+	} else {
+		packageNameImportURL = *packageName
 	}
-	projectName = packageNameImportUrl[strings.LastIndex(packageNameImportUrl, "/")+1:]
-
-	//获取表信息
-	var db, err = sql.Open(*sqlType, getDSN())
+	projectName = packageNameImportURL[strings.LastIndex(packageNameImportURL, "/")+1:]
+	if target == nil || *target == "" {
+		targetPath = fmt.Sprintf("%s/%s", curPath, projectName)
+	} else {
+		targetPath = fmt.Sprintf("%s/%s", *target, projectName)
+	}
+	var err error
+	DB, err = sql.Open(*sqlType, getDSN())
 	if err != nil {
 		fmt.Println("Error in open database: " + err.Error())
 		return
 	}
-	defer db.Close()
-	// parse or read tables
+	defer DB.Close()
+
+	generateFrontend(curPath)
+	generateBackend(curPath)
+}
+
+//生成前端框架
+func generateFrontend(curPath string) {
+	// 默认d2admin
+	_, err := util.Copy(fmt.Sprintf("%s/template/frontend/%s", curPath, *frontend), targetPath+"/manage", curPath+"/uncopy.txt")
+	if err != nil {
+		panic(err)
+	}
+}
+
+//生成后端框架
+func generateBackend(curPath string) {
+	var err error
+	//获取表信息
 	var tables []string
 	if *sqlTable != "" {
 		tables = strings.Split(*sqlTable, ",")
 	} else {
-		tables, err = schema.TableNames(db)
+		tables, err = schema.TableNames(DB)
 		if err != nil {
-			fmt.Println("Error in fetching tables information from mysql information schema")
+			panic(err)
 			return
 		}
 	}
-
-	generateFrontend(curPath,curPath+"/"+projectName)
-	generateBackend(curPath,curPath+"/"+projectName)
-
-
-
-	tempData := map[string]interface{}{
-		"PackageName": packageNameImportUrl,
+	// 默认echo，复制框架模板
+	_, err = util.Copy(fmt.Sprintf("%s/template/backend/%s", curPath, *backend), targetPath, curPath+"/uncopy.txt")
+	if err != nil {
+		panic(err)
 	}
-	tc := []tempConfig{
+	// 生成代码
+	switch *backend {
+	case "echo":
+		executeBackendEcho(tables)
+	}
+}
+
+func getTargetPath(path string) string {
+	return fmt.Sprintf("%s/%s", targetPath, path)
+}
+
+func executeBackendEcho(tables []string) {
+	tempData := map[string]interface{}{
+		"PackageName": packageNameImportURL,
+		"ProjectName": projectName,
+	}
+	tc := []util.TemplateConfig{
 		{
-			sourcePath: "template/globalInit.tpl",
-			targetPath: "example/manage-api/global/init.go",
-			data:       tempData,
+			SourcePath: "template/backend/echo/manage-api/global/init.go.tpl",
+			TargetPath: getTargetPath("manage-api/global/init.go"),
+			Data:       tempData,
 		},
 		{
-			sourcePath: "template/configtoml.tpl",
-			targetPath: "example/manage-api/config/config.toml",
-			data: map[string]interface{}{
+			SourcePath: "template/backend/echo/manage-api/config/config.toml.tpl",
+			TargetPath: getTargetPath("manage-api/config/config.toml"),
+			Data: map[string]interface{}{
 				"host":       dbHost,
 				"port":       dbPort,
 				"user":       dbUser,
@@ -113,29 +151,44 @@ func main() {
 				"name":       dbName,
 				"parameters": dbParameters,
 			},
-			afterFunc: func(i []byte) []byte {
+			AfterFunc: func(i []byte) []byte {
 				str := string(i)
 				return []byte(strings.ReplaceAll(str, "`", ""))
 			},
 		},
 		{
-			sourcePath: "template/testInit.tpl",
-			targetPath: "example/manage-api/test/init.go",
-			data:       tempData,
+			SourcePath: "template/backend/echo/manage-api/test/init.tpl",
+			TargetPath: getTargetPath("manage-api/test/init.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/filter.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/filter.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/login.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/login.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/power.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/power.go"),
+			Data:       tempData,
 		},
 	}
-	executeTemplate(tc)
+	util.ExecuteTemplateConf(tc)
 
 	// model
-	m := getTemplate("template/model.tpl")
+	m := util.GetTemplateByPath("template/backend/echo/model/model.tpl")
 	// handle
-	h := getTemplate("template/handle.tpl")
+	h := util.GetTemplateByPath("template/backend/echo/manage-api/handle/handle.tpl")
 	// router
-	r := getTemplate("template/router.tpl")
+	r := util.GetTemplateByPath("template/backend/echo/manage-api/router/router.tpl")
 	// test
-	t := getTemplate("template/test.tpl")
+	t := util.GetTemplateByPath("template/backend/echo/manage-api/test/test.tpl")
 	// main.go
-	ma := getTemplate("template/main.tpl")
+	ma := util.GetTemplateByPath("template/backend/echo/manage-api/main.tpl")
 
 	var structNames, routers []string
 	var modelPath, handlePath, routerPath, testPath, singName string
@@ -144,12 +197,12 @@ func main() {
 		structName := dbmeta.FmtFieldName(tableName)
 		structName = inflection.Singular(structName)
 		structNames = append(structNames, structName)
-		modelInfo := dbmeta.GenerateStruct(db, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
+		modelInfo := dbmeta.GenerateStruct(DB, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
 		singName = inflection.Singular(tableName)
-		modelPath = fmt.Sprintf("example/manage-api/model/%s.go", singName)
-		handlePath = fmt.Sprintf("example/manage-api/handle/%s.go", singName)
-		routerPath = fmt.Sprintf("example/manage-api/router/%s.go", singName)
-		testPath = fmt.Sprintf("example/manage-api/test/%s_test.go", singName)
+		modelPath = fmt.Sprintf(getTargetPath("model/%s.go"), singName)
+		handlePath = fmt.Sprintf(getTargetPath("manage-api/handle/%s.go"), singName)
+		routerPath = fmt.Sprintf(getTargetPath("manage-api/router/%s.go"), singName)
+		testPath = fmt.Sprintf(getTargetPath("manage-api/test/%s_test.go"), singName)
 		util.CreateFile(modelPath)
 		util.CreateFile(handlePath)
 		util.CreateFile(routerPath)
@@ -157,70 +210,19 @@ func main() {
 		//model
 		util.ExecuteTemplate(m, modelPath, modelInfo)
 		//handle
-		util.ExecuteTemplate(h, handlePath, map[string]string{"PackageName": packageNameImportUrl, "StructName": structName,
-			"singName": dbmeta.FmtFieldName2(tableName), "TableRemark": modelInfo.TableRemark})
+		util.ExecuteTemplate(h, handlePath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
+			"singName": dbmeta.FmtFieldName2(tableName), "TableRemark": modelInfo.TableRemark, "IDPrimaryKeyInt": modelInfo.IDPrimaryKeyInt})
 		//test
-		util.ExecuteTemplate(t, testPath, map[string]interface{}{"PackageName": packageNameImportUrl, "StructName": structName,
+		util.ExecuteTemplate(t, testPath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
 			"SingName": singName, "FieldDefVal": modelInfo.FieldDefVal, "Columns": modelInfo.Columns})
 		//router
-		util.ExecuteTemplate(r, routerPath, map[string]string{"PackageName": packageNameImportUrl, "StructName": structName, "SingName": singName})
+		util.ExecuteTemplate(r, routerPath, map[string]string{"PackageName": packageNameImportURL, "StructName": structName, "SingName": singName})
 		// add router
-		routers = append(routers, fmt.Sprintf("router.%sRouter(api)", structName))
+		routers = append(routers, fmt.Sprintf("router.%sRouter(auth)", structName))
 	}
 	//main
-	util.ExecuteTemplateBase(ma, "example/manage-api/main.go", map[string]interface{}{"PackageName": packageNameImportUrl, "Routers": routers}, func(i []byte) []byte {
+	util.ExecuteTemplateBase(ma, getTargetPath("manage-api/main.go"), map[string]interface{}{"PackageName": packageNameImportURL, "Routers": routers}, func(i []byte) []byte {
 		str := string(i)
 		return []byte(strings.ReplaceAll(str, "`", ""))
 	})
-}
-
-//生成前端框架
-func generateFrontend(curPath, targetPath string) {
-	// 默认d2admin
-	_, err := util.Copy(fmt.Sprintf("%s/template/frontend/%s", curPath, *manageStyle), targetPath+"/example/manage", curPath+"/uncopy.txt")
-	if err != nil {
-		panic(err)
-	}
-}
-
-//生成后端框架
-func generateBackend(curPath string, targetPath string) {
-	// 默认echo
-	_, err := util.Copy(fmt.Sprintf("%s/template/backend/", curPath), curPath+"/example/manage", curPath+"/uncopy.txt")
-	if err != nil {
-		panic(err)
-	}
-}
-
-func getTemplate(tempPath string) *template.Template {
-	data, err := util.ReadAll(tempPath)
-	if err != nil {
-		panic(err)
-	}
-	return util.GetTemplate(string(data))
-}
-
-func executeTemplate(temps []tempConfig) {
-	var data []byte
-	var err error
-	var tm *template.Template
-	for _, value := range temps {
-		data, err = util.ReadAll(value.sourcePath)
-		if err != nil {
-			panic(err)
-		}
-		tm = util.GetTemplate(string(data))
-		if value.afterFunc != nil {
-			util.ExecuteTemplateBase(tm, value.targetPath, value.data, value.afterFunc)
-		} else {
-			util.ExecuteTemplate(tm, value.targetPath, value.data)
-		}
-	}
-}
-
-type tempConfig struct {
-	sourcePath string
-	targetPath string
-	data       map[string]interface{}
-	afterFunc  func(i []byte) []byte
 }
