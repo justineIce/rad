@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/gommon/log"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 )
 
@@ -28,13 +29,30 @@ func main() {
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("16a2t6WKgSlsdf75N40SFOhglShSJfg0ua8OnZ"))))
 
 	api := e.Group("/api")
-	api.GET("/img/code", handle.VerificationCode)
-	auth := api.Group("/auth", handle.Filter)
-    {
-        // ===== router start =====
-        {{range .Routers}}{{.}}
-        {{end}}
-        // ===== router end =====
+	{
+        api.GET("/img/code", handle.VerificationCode)
+        //账号登录
+        api.POST("/login", handle.Login)
+        //上传文件访问
+        e.Static("/files", "files")
+        //上传的文件需登录方可访问
+        e.GET("/files/*/auth/*", func(c echo.Context) error {
+            return c.File(strings.TrimLeft(c.Request().URL.Path, "/"))
+        }, handle.Filter)
+        auth := api.Group("/auth", handle.Filter)
+        {
+
+            //账号登出
+            auth.GET("/logout", handle.LogOut)
+            //账号菜单权限
+            auth.GET("/login/menu", handle.GetLoginMenu)
+            auth.POST("/files/upload/:auth", file.UploadFile)
+            auth.POST("/files/remove", file.DelFileLog)
+            // ===== router start =====
+            {{range .Routers}}{{.}}
+            {{end}}
+            // ===== router end =====
+        }
     }
 	go func() {
 		if err := e.Start(fmt.Sprintf(":%d", global.Conf.HTTP.Port)); err != nil {

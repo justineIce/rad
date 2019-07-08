@@ -40,7 +40,7 @@ func VerificationCode(c echo.Context) error {
 func Login(c echo.Context) error {
 	/*//累积输入错误次数
 	var imgCode string
-	errCountVal := global.Session(c).GetValue(global.ImgCodeErrNum)
+	errCountVal := global.Session(c).GetValue(global.VerificationNum)
 	if errCountVal == "" {
 		errCountVal = "0"
 	}
@@ -56,7 +56,7 @@ func Login(c echo.Context) error {
 			return utils.ImgCodeFail(c)
 		}
 	}
-	global.Session(c).AddValue(global.ImgCodeErrNum, convert.ToString(errCount+1)).Saves()*/
+	global.Session(c).AddValue(global.VerificationNum, convert.ToString(errCount+1)).Saves()*/
 
 	//账号验证
 	userName := c.FormValue("username")

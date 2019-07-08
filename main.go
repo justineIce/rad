@@ -15,11 +15,16 @@ import (
 )
 
 var (
-	sqlType              = goopt.String([]string{"--sqltype"}, "mysql", "数据库类型，默认：mysql")
-	dbHost               = goopt.String([]string{"--dbHost"}, "127.0.0.1", "数据库主机地址，默认：127.0.0.1")
-	dbPort               = goopt.String([]string{"--dbPort"}, "3306", "数据库端口，默认：3306")
-	dbUser               = goopt.String([]string{"--dbUser"}, "root", "数据库的用户名，默认：root")
-	dbPassword           = goopt.String([]string{"--dbPassword"}, "123456", "数据库的密码，默认：123456")
+	sqlType    = goopt.String([]string{"--sqltype"}, "mysql", "数据库类型，默认：mysql")
+	dbHost     = goopt.String([]string{"--dbHost"}, "127.0.0.1", "数据库主机地址，默认：127.0.0.1")
+	dbPort     = goopt.String([]string{"--dbPort"}, "3306", "数据库端口，默认：3306")
+	dbUser     = goopt.String([]string{"--dbUser"}, "root", "数据库的用户名，默认：root")
+	dbPassword = goopt.String([]string{"--dbPassword"}, "123456", "数据库的密码，默认：123456")
+
+	rdHost     = goopt.String([]string{"--rdHost"}, "127.0.0.1", "数据库主机地址，默认：127.0.0.1")
+	rdPort     = goopt.String([]string{"--rdPort"}, "6379", "数据库端口，默认：3306")
+	rdPassword = goopt.String([]string{"--rdPassword"}, "", "数据库的密码，默认：无")
+
 	dbName               = goopt.String([]string{"--dbName"}, "test", "数据库名称，默认：test")
 	dbParameters         = goopt.String([]string{"--dbParameters"}, "charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true", "数据库连接字符串，默认：charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true")
 	sqlTable             = goopt.String([]string{"--table"}, "", "需要转换的表名，默认：*")
@@ -150,6 +155,9 @@ func executeBackendEcho(tables []string) {
 				"password":   dbPassword,
 				"name":       dbName,
 				"parameters": dbParameters,
+				"rdHost":     rdHost,
+				"rdPort":     rdPort,
+				"rdPassword": rdPassword,
 			},
 			AfterFunc: func(i []byte) []byte {
 				str := string(i)
@@ -159,6 +167,11 @@ func executeBackendEcho(tables []string) {
 		{
 			SourcePath: "template/backend/echo/manage-api/test/init.tpl",
 			TargetPath: getTargetPath("manage-api/test/init.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/test/login_test.go.tpl",
+			TargetPath: getTargetPath("manage-api/test/login_test.go"),
 			Data:       tempData,
 		},
 		{
@@ -174,6 +187,31 @@ func executeBackendEcho(tables []string) {
 		{
 			SourcePath: "template/backend/echo/manage-api/handle/power.go.tpl",
 			TargetPath: getTargetPath("manage-api/handle/power.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/file.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/file.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/utils/filetype/filetype.go.tpl",
+			TargetPath: getTargetPath("utils/filetype/filetype.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/utils/filetype/kind.go.tpl",
+			TargetPath: getTargetPath("utils/filetype/kind.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/utils/filetype/match.go.tpl",
+			TargetPath: getTargetPath("utils/filetype/match.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/utils/filetype/matchers/matchers.go.tpl",
+			TargetPath: getTargetPath("utils/filetype/matchers/matchers.go"),
 			Data:       tempData,
 		},
 	}
@@ -192,6 +230,7 @@ func executeBackendEcho(tables []string) {
 
 	var structNames, routers []string
 	var modelPath, handlePath, routerPath, testPath, singName string
+	var fieldsMap map[string]bool
 	// generate go files for each table
 	for _, tableName := range tables {
 		structName := dbmeta.FmtFieldName(tableName)
@@ -207,14 +246,22 @@ func executeBackendEcho(tables []string) {
 		util.CreateFile(handlePath)
 		util.CreateFile(routerPath)
 		util.CreateFile(testPath)
+		fieldsMap = make(map[string]bool, 0)
+		for _, v := range modelInfo.Columns {
+			fieldsMap[v.ColumnName] = true
+		}
 		//model
 		util.ExecuteTemplate(m, modelPath, modelInfo)
 		//handle
 		util.ExecuteTemplate(h, handlePath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
-			"singName": dbmeta.FmtFieldName2(tableName), "TableRemark": modelInfo.TableRemark, "IDPrimaryKeyInt": modelInfo.IDPrimaryKeyInt})
+			"singName": dbmeta.FmtFieldName2(tableName), "TableRemark": modelInfo.TableRemark, "IDPrimaryKeyInt": modelInfo.IDPrimaryKeyInt,
+			"FieldsMap": fieldsMap, "TableName": tableName})
 		//test
-		util.ExecuteTemplate(t, testPath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
-			"SingName": singName, "FieldDefVal": modelInfo.FieldDefVal, "Columns": modelInfo.Columns})
+		util.ExecuteTemplateBase(t, testPath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
+			"SingName": singName, "Columns": modelInfo.Columns}, func(i []byte) []byte {
+			str := string(i)
+			return []byte(strings.ReplaceAll(str, "`", ""))
+		})
 		//router
 		util.ExecuteTemplate(r, routerPath, map[string]string{"PackageName": packageNameImportURL, "StructName": structName, "SingName": singName})
 		// add router

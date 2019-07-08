@@ -35,6 +35,32 @@ db_name = "{{.name}}"
 # 连接参数
 parameters = "{{.parameters}}"
 
+# redis配置
+[redis]
+# 地址
+addr = "{{.rdHost}}:{{.rdPort}}"
+# 密码
+password = "{{.rdPassword}}"
+# 数据库
+database = 0
+# 最大连接数
+maxOpenConns = 10
+# 最大空闲连接数
+maxIdleConns = 10
+
+# 文件上传
+[fileUpload]
+# 前缀地址
+basePath = ""
+# 存放位置
+path = "files"
+# 域名
+doMain = ""
+# 文件最大大小
+maxFileSize = 52428800
+# 文件格式限制
+extFilter = "255216,7173,13780,6677,51200,208207,3780,8075,119101,97115"
+
 # 日志配置
 [log]
 path="{{.name}}.log"

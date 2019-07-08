@@ -20,6 +20,7 @@ var (
 	//Secret
 	Secret  = []byte("5eF6Xj8z#pZxBOkavlcPq^MmC09*S*!8!8Jor8V7*m0F3*zWReV%o3taoH%DI@ni")
 	VerificationCode = "VerificationCode"
+	VerificationNum = "VerificationNum"
 )
 
 //ConfPath 配置文件路径

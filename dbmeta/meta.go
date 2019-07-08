@@ -18,7 +18,6 @@ type ModelInfo struct {
 	TableRemark     string
 	Fields          []string
 	PrimaryKey      []string
-	FieldDefVal     map[string]interface{}
 	Columns         []*ColumnInfo
 	IDPrimaryKeyInt bool
 }
