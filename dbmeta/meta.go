@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/jinzhu/inflection"
 	"math/rand"
 	"regexp"
 	"strings"
@@ -13,6 +14,7 @@ import (
 type ModelInfo struct {
 	PackageName     string
 	StructName      string
+	SingName        string
 	ShortStructName string
 	TableName       string
 	TableRemark     string
@@ -99,8 +101,11 @@ type ColumnInfo struct {
 	NumericPrecision       string      `json:"numeric_precision"`        //double/floag/numeric 长度
 	NumericScale           string      `json:"numeric_scale"`            //小数点
 	ColumnComment          string      `json:"column_comment"`           //字段备注
-	AddTestValue           interface{} //字段test时值
-	UpdateTestValue        interface{} //字段test时值
+	ColumnCNName           string      //中文名称
+	DataTypeLower          string      //小写
+	StructName             string      //StructName
+	AddTestValue           interface{} //添加测试的，字段test时值
+	UpdateTestValue        interface{} //修改测试的，字段test时值
 	PrimaryKey             bool        //是否为主键
 }
 
@@ -239,6 +244,7 @@ func GenerateStruct(db *sql.DB, dbName string, tableName string, structName stri
 		TableName:       tableName,
 		TableRemark:     tableRemark,
 		ShortStructName: strings.ToLower(string(structName[0])),
+		SingName:        FmtFieldName2(tableName),
 		Fields:          fields,
 		PrimaryKey:      primaryKey,
 		Columns:         cols,
@@ -253,9 +259,16 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 	var field = ""
 	for _, c := range columns {
 		key := c.ColumnName
-
+		if c.ColumnComment != "" {
+			//逗号分隔
+			alias := strings.ReplaceAll(c.ColumnComment, "，", ",")
+			comm := strings.Split(alias, ",")
+			c.ColumnCNName = comm[0]
+		}
+		c.StructName = inflection.Singular(FmtFieldName(c.ColumnName))
+		c.DataTypeLower = strings.ToLower(c.DataType)
 		if strings.ToLower(key) == "id" {
-			switch strings.ToLower(c.DataType) {
+			switch c.DataTypeLower {
 			case "tinyint", "int", "smallint", "mediumint", "bigint":
 				idPrimaryKeyInt = true
 				break
@@ -289,7 +302,7 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 			annotations = append(annotations, fmt.Sprintf("gorm:\"%s\"", strings.Join(gormTags, ";")))
 		}
 		if jsonAnnotation == true {
-			annotations = append(annotations, fmt.Sprintf("json:\"%s\" form:\"%s\" query:\"%s\"", key, key, key))
+			annotations = append(annotations, fmt.Sprintf("json:\"%s\" form:\"%s\" query:\"%s\"", c.StructName, c.StructName, key))
 		}
 		if len(valid) > 0 {
 			v := extractValid(c.ColumnComment)
@@ -298,11 +311,8 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 			}
 			annotations = append(annotations, fmt.Sprintf("valid:\"%s\"", strings.Join(valid, ";")))
 		}
-		if c.ColumnComment != "" {
-			//逗号分隔
-			alias := strings.ReplaceAll(c.ColumnComment, "，", ",")
-			comm := strings.Split(alias, ",")
-			annotations = append(annotations, fmt.Sprintf("validAlias:\"%s\"", comm[0]))
+		if c.ColumnCNName != "" {
+			annotations = append(annotations, fmt.Sprintf("validAlias:\"%s\"", c.ColumnCNName))
 		}
 		if len(annotations) > 0 {
 			field = fmt.Sprintf("%s %s `%s`", fieldName, valueType, strings.Join(annotations, " "))
@@ -347,7 +357,7 @@ func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, valid []s
 			valid = append(valid, "Required")
 		}
 	}
-	mysqlType := strings.ToLower(c.DataType)
+	mysqlType := c.DataTypeLower
 	switch mysqlType {
 	case "tinyint", "int", "smallint", "mediumint":
 		addDefVal = GetRandom(StrToInt(c.NumericPrecision) / 2)

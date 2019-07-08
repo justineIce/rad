@@ -46,8 +46,8 @@ func main() {
             auth.GET("/logout", handle.LogOut)
             //账号菜单权限
             auth.GET("/login/menu", handle.GetLoginMenu)
-            auth.POST("/files/upload/:auth", file.UploadFile)
-            auth.POST("/files/remove", file.DelFileLog)
+            auth.POST("/files/upload/:auth", handle.UploadFile)
+            auth.POST("/files/remove", handle.DelFileLog)
             // ===== router start =====
             {{range .Routers}}{{.}}
             {{end}}

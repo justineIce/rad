@@ -6,9 +6,9 @@ import (
 )
 
 func {{.StructName}}Router(e *echo.Group) {
-	e.POST("/{{.SingName}}/get", handle.Get{{.StructName}})
-	e.POST("/{{.SingName}}/all", handle.Get{{.StructName}}All)
-	e.POST("/{{.SingName}}/page", handle.Get{{.StructName}}Page)
-	e.POST("/{{.SingName}}/save", handle.Save{{.StructName}})
-	e.POST("/{{.SingName}}/del", handle.Del{{.StructName}})
+	e.POST("/{{.TableName}}/get", handle.Get{{.StructName}})
+	e.POST("/{{.TableName}}/all", handle.Get{{.StructName}}All)
+	e.POST("/{{.TableName}}/page", handle.Get{{.StructName}}Page)
+	e.POST("/{{.TableName}}/save", handle.Save{{.StructName}})
+	e.POST("/{{.TableName}}/del", handle.Del{{.StructName}})
 }

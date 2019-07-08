@@ -56,11 +56,12 @@
 </template>
 
 <script>
+import md5 from 'md5'
 import { mapActions } from 'vuex'
 export default {
   data () {
     return {
-      imgCode: '/api/m/img/code',
+      imgCode: '/api/img/code',
       // 表单
       formLogin: {
         username: '18223277006',
@@ -89,7 +90,7 @@ export default {
       'login'
     ]),
     handleImgCode () {
-      this.imgCode = `/api/m/img/code?${new Date().getTime()}`
+      this.imgCode = `/api/img/code?${new Date().getTime()}`
     },
     /**
      * @description 提交表单
@@ -101,7 +102,7 @@ export default {
           this.login({
             vm: this,
             username: this.formLogin.username,
-            password: this.formLogin.password,
+            password: md5(this.formLogin.password),
             code: this.formLogin.code
           })
             .then(() => {

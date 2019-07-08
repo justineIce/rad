@@ -16,7 +16,7 @@ func TestGet{{.StructName}}(t *testing.T) {
 	Login(t, func(e *echo.Echo, token string) {
         f := url.Values{}
         f.Add("name", "1")
-        req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}", strings.NewReader(f.Encode()))
+        req := httptest.NewRequest(echo.POST, "/api/{{.TableName}}", strings.NewReader(f.Encode()))
         req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
         rec := httptest.NewRecorder()
         c := e.NewContext(req, rec)
@@ -41,7 +41,7 @@ func TestGet{{.StructName}}All(t *testing.T) {
 	e := echo.New()
 	f := url.Values{}
 	f.Add("name", "1")
-	req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}/all", strings.NewReader(f.Encode()))
+	req := httptest.NewRequest(echo.POST, "/api/{{.TableName}}/all", strings.NewReader(f.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -65,7 +65,7 @@ func TestGet{{.StructName}}Page(t *testing.T) {
 	e := echo.New()
 	f := url.Values{}
 	f.Add("name", "1")
-	req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}/page", strings.NewReader(f.Encode()))
+	req := httptest.NewRequest(echo.POST, "/api/{{.TableName}}/page", strings.NewReader(f.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -90,7 +90,7 @@ func TestAdd{{.StructName}}(t *testing.T) {
 	f := url.Values{}
 	{{ range .Columns }}{{if not .PrimaryKey }}
 	f.Add("{{ .ColumnName }}", "{{ .AddTestValue }}"){{end}}{{end}}
-	req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}/add", strings.NewReader(f.Encode()))
+	req := httptest.NewRequest(echo.POST, "/api/{{.TableName}}/add", strings.NewReader(f.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -115,7 +115,7 @@ func TestUpdate{{.StructName}}(t *testing.T) {
 	f := url.Values{}
 	{{ range .Columns }}
 	f.Add("{{ .ColumnName }}", "{{ .UpdateTestValue }}"){{end}}
-	req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}/update", strings.NewReader(f.Encode()))
+	req := httptest.NewRequest(echo.POST, "/api/{{.TableName}}/update", strings.NewReader(f.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
@@ -139,7 +139,7 @@ func TestDel{{.StructName}}(t *testing.T) {
 	e := echo.New()
 	f := url.Values{}
 	f.Add("id", "1")
-	req := httptest.NewRequest(echo.POST, "/api/{{.SingName}}/update", strings.NewReader(f.Encode()))
+	req := httptest.NewRequest(echo.POST, "/api/{{.TableName}}/update", strings.NewReader(f.Encode()))
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)

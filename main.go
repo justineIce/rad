@@ -128,6 +128,12 @@ func generateBackend(curPath string) {
 	case "echo":
 		executeBackendEcho(tables)
 	}
+
+	//生成后端代码
+	switch *frontend {
+	case "d2admin":
+		executeFrontendD2admim(tables)
+	}
 }
 
 func getTargetPath(path string) string {
@@ -229,7 +235,7 @@ func executeBackendEcho(tables []string) {
 	ma := util.GetTemplateByPath("template/backend/echo/manage-api/main.tpl")
 
 	var structNames, routers []string
-	var modelPath, handlePath, routerPath, testPath, singName string
+	var modelPath, handlePath, routerPath, testPath string
 	var fieldsMap map[string]bool
 	// generate go files for each table
 	for _, tableName := range tables {
@@ -237,11 +243,10 @@ func executeBackendEcho(tables []string) {
 		structName = inflection.Singular(structName)
 		structNames = append(structNames, structName)
 		modelInfo := dbmeta.GenerateStruct(DB, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
-		singName = inflection.Singular(tableName)
-		modelPath = fmt.Sprintf(getTargetPath("model/%s.go"), singName)
-		handlePath = fmt.Sprintf(getTargetPath("manage-api/handle/%s.go"), singName)
-		routerPath = fmt.Sprintf(getTargetPath("manage-api/router/%s.go"), singName)
-		testPath = fmt.Sprintf(getTargetPath("manage-api/test/%s_test.go"), singName)
+		modelPath = fmt.Sprintf(getTargetPath("model/%s.go"), tableName)
+		handlePath = fmt.Sprintf(getTargetPath("manage-api/handle/%s.go"), tableName)
+		routerPath = fmt.Sprintf(getTargetPath("manage-api/router/%s.go"), tableName)
+		testPath = fmt.Sprintf(getTargetPath("manage-api/test/%s_test.go"), tableName)
 		util.CreateFile(modelPath)
 		util.CreateFile(handlePath)
 		util.CreateFile(routerPath)
@@ -254,16 +259,16 @@ func executeBackendEcho(tables []string) {
 		util.ExecuteTemplate(m, modelPath, modelInfo)
 		//handle
 		util.ExecuteTemplate(h, handlePath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
-			"singName": dbmeta.FmtFieldName2(tableName), "TableRemark": modelInfo.TableRemark, "IDPrimaryKeyInt": modelInfo.IDPrimaryKeyInt,
+			"SingName": modelInfo.SingName, "TableRemark": modelInfo.TableRemark, "IDPrimaryKeyInt": modelInfo.IDPrimaryKeyInt,
 			"FieldsMap": fieldsMap, "TableName": tableName})
 		//test
 		util.ExecuteTemplateBase(t, testPath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
-			"SingName": singName, "Columns": modelInfo.Columns}, func(i []byte) []byte {
+			"TableName": tableName, "Columns": modelInfo.Columns}, func(i []byte) []byte {
 			str := string(i)
 			return []byte(strings.ReplaceAll(str, "`", ""))
 		})
 		//router
-		util.ExecuteTemplate(r, routerPath, map[string]string{"PackageName": packageNameImportURL, "StructName": structName, "SingName": singName})
+		util.ExecuteTemplate(r, routerPath, map[string]string{"PackageName": packageNameImportURL, "StructName": structName, "TableName": tableName})
 		// add router
 		routers = append(routers, fmt.Sprintf("router.%sRouter(auth)", structName))
 	}
@@ -272,4 +277,32 @@ func executeBackendEcho(tables []string) {
 		str := string(i)
 		return []byte(strings.ReplaceAll(str, "`", ""))
 	})
+}
+
+//生成d2admin
+func executeFrontendD2admim(tables []string) {
+	// api	生成api
+	api := util.GetTemplateByPath("template/frontend/d2admin/src/api/api.js.tpl")
+	// pages 生成页面
+	page := util.GetTemplateByPath("template/frontend/d2admin/src/pages/page.vue.tpl")
+	// router 生成路由
+	/*api := util.GetTemplateByPath("template/frontend/d2admin/src/api/api.js.tpl")
+	var structNames, routers []string
+	var modelPath, handlePath, routerPath, testPath, singName string
+	var fieldsMap map[string]bool*/
+	var routerPath, pagePath string
+	for _, tableName := range tables {
+		structName := dbmeta.FmtFieldName(tableName)
+		structName = inflection.Singular(structName)
+		modelInfo := dbmeta.GenerateStruct(DB, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
+		//api生成
+		routerPath = fmt.Sprintf(getTargetPath("manage/src/api/%s.js"), modelInfo.TableName)
+		util.ExecuteTemplateBase(api, routerPath, map[string]interface{}{"modelInfo": modelInfo}, func(i []byte) []byte {
+			str := string(i)
+			return []byte(strings.ReplaceAll(str, "`", ""))
+		})
+		//page生成
+		pagePath = fmt.Sprintf(getTargetPath("manage/src/pages/%s.vue"), modelInfo.TableName)
+		util.ExecuteTemplate(page, pagePath, map[string]interface{}{"modelInfo": modelInfo})
+	}
 }
