@@ -7,7 +7,6 @@ import (
 	"{{.PackageName}}/utils/validation"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
-	"time"
 )
 
 // {{.TableRemark}}获取单条数据
@@ -15,7 +14,7 @@ func Get{{.StructName}}(c echo.Context) error {
 	id := c.FormValue("id")
 	var {{.SingName}} model.{{.StructName}}
 	if err := global.DB.First(&{{.SingName}}, id).Error; err != nil {
-		c.Logger().Errorf("Get{{.StructName}} error：%v", err)
+		global.Log.Error("Get{{.StructName}} error：%v", err)
 		return utils.ErrorNull(c, utils.GetFailResult)
 	}
 	{{ range .Columns }}{{if eq .ColumnName "created_by" }}
@@ -31,7 +30,7 @@ func Get{{.StructName}}All(c echo.Context) error {
 	id := c.FormValue("id")
 	var {{.SingName}} []model.{{.StructName}}
 	if err := global.DB.Find(&{{.SingName}}, id).Error; err != nil {
-		c.Logger().Errorf("Get{{.StructName}}All error：%v", err)
+		global.Log.Error("Get{{.StructName}}All error：%v", err)
 		return utils.ErrorNull(c, utils.GetFailResult)
 	}
 	return utils.SuccessNullMsg(c, {{.SingName}})
@@ -60,7 +59,7 @@ func Get{{.StructName}}Page(c echo.Context) error {
 	pageIndex := utils.GetPageIndex(c.FormValue("page_index"))
 	pageSize := utils.GetPageSize(c.FormValue("page_size"))
 	if err := db.Limit(pageSize).Offset((pageIndex - 1) * pageSize).Scan(&list).Error; err != nil {
-		c.Logger().Errorf("Get{{.StructName}}Page error：%v", err)
+		global.Log.Error("Get{{.StructName}}Page error：%v", err)
 		return utils.ErrorNull(c, utils.GetFailResult)
 	}
 	return utils.SuccessNullMsg(c, &utils.PageData{
@@ -143,16 +142,9 @@ func Del{{.StructName}}(c echo.Context) error {
 		return utils.ErrorNull(c, err.Error())
 	}{{end}}
 
-    {{if .FieldsMap.updated_by }}
-	if err := global.DB.Model(&{{.SingName}}).Updates(map[string]interface{}{"updated_by": loginInfo.ID, "deleted_at": utils.FormatTime(time.Now())}); err != nil {
-		c.Logger().Errorf("Del{{.StructName}} error：%v", err)
+	if err := global.DB.Delete(&{{.SingName}}).Error; err != nil {
+		global.Log.Error("Del{{.StructName}} error：%v", err)
 		return utils.ErrorNull(c, utils.DeleteFailResult)
 	}
-	{{else}}
-	if err := global.DB.Model(&{{.SingName}}).Updates(map[string]interface{}{"deleted_at": utils.FormatTime(time.Now())}); err != nil {
-		c.Logger().Errorf("Del{{.StructName}} error：%v", err)
-		return utils.ErrorNull(c, utils.DeleteFailResult)
-	}
-	{{end}}
 	return utils.SuccessNull(c, utils.DeleteSuccessResult)
 }

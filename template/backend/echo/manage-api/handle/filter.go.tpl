@@ -42,7 +42,7 @@ func Filter(next echo.HandlerFunc) echo.HandlerFunc {
 			return utils.AuthFail(c, err.Error())
 		}
 		var sysUser model.SysUser
-		query := "id,company_id,office_id,username,name,user_type,photo,login_ip,login_date,login_flag,created_at,updated_at,del_flag"
+		query := "id,company_id,office_id,username,name,photo,login_ip,login_date,login_flag,created_at,updated_at"
 		if err := global.DB.Select(query).First(&sysUser, "id=?", loginInfo.ID).Error; err != nil {
 			global.Log.Error("query sys_user error： %s", err.Error())
 			return utils.AuthFail(c, AuthLoginInfoErrorMsg)

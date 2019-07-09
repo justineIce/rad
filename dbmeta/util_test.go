@@ -2,6 +2,8 @@ package dbmeta
 
 import (
 	"reflect"
+	"regexp"
+	"strings"
 	"testing"
 	"time"
 )
@@ -56,5 +58,19 @@ func TestRandom(t *testing.T) {
 func TestRandomStr(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		t.Log(GetRandomString(10))
+	}
+}
+
+func TestRegexpStr(t *testing.T) {
+	var reg = regexp.MustCompile(`enum\((.*?)\)`)
+	params := reg.FindStringSubmatch("enum('保密','男','女')")
+	t.Log(params)
+	if len(params) > 1 {
+		v := strings.TrimRight(params[1], ";")
+		if v != "" {
+			reg = regexp.MustCompile(`'(.*?)'`)
+			params = reg.FindAllString("enum('保密','男','女')", -1)
+			t.Log(params)
+		}
 	}
 }

@@ -3,7 +3,7 @@
 // 获取单条
 export function Get{{.modelInfo.StructName}} (data) {
     return request({
-        url: '/auth/{{.modelInfo.SingName}}/get',
+        url: '/auth/{{.modelInfo.TableName}}/get',
         method: 'post',
         data
     })
@@ -11,7 +11,7 @@ export function Get{{.modelInfo.StructName}} (data) {
 // 获取全部
 export function Get{{.modelInfo.StructName}}All (data) {
     return request({
-        url: '/auth/{{.modelInfo.SingName}}/get',
+        url: '/auth/{{.modelInfo.TableName}}/all',
         method: 'post',
         data
     })
@@ -19,7 +19,7 @@ export function Get{{.modelInfo.StructName}}All (data) {
 // 获取分页
 export function Get{{.modelInfo.StructName}}Page (data) {
     return request({
-        url: '/auth/{{.modelInfo.SingName}}/get',
+        url: '/auth/{{.modelInfo.TableName}}/page',
         method: 'post',
         data
     })
@@ -27,7 +27,7 @@ export function Get{{.modelInfo.StructName}}Page (data) {
 // 保存
 export function Save{{.modelInfo.StructName}} (data) {
     return request({
-        url: '/auth/{{.modelInfo.SingName}}/get',
+        url: '/auth/{{.modelInfo.TableName}}/save',
         method: 'post',
         data
     })
@@ -35,7 +35,7 @@ export function Save{{.modelInfo.StructName}} (data) {
 // 删除
 export function Del{{.modelInfo.StructName}} (data) {
     return request({
-        url: '/auth/{{.modelInfo.SingName}}/get',
+        url: '/auth/{{.modelInfo.TableName}}/del',
         method: 'post',
         data
     })

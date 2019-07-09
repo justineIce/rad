@@ -39,7 +39,7 @@ const service = axios.create({
   timeout: 5000, // 请求超时时间
   headers: {
     'X-Requested-With': 'XMLHttpRequest',
-    'Authorization': 'Bearer ' + util.cookies.get('token'),
+    'Access-Token': util.cookies.get('token'),
     'Content-Type': 'application/x-www-form-urlencoded;application/json; charset=UTF-8;'
   },
   responseType: 'json',
@@ -55,7 +55,7 @@ service.interceptors.request.use(
     // 在请求发送之前做一些处理
     const token = util.cookies.get('token')
     // 让每个请求携带token-- ['X-Token']为自定义key 请根据实际情况自行修改
-    config.headers['Authorization'] = 'Bearer ' + token
+    config.headers['Access-Token'] = token
     return config
   },
   error => {

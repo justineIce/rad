@@ -1,4 +1,5 @@
 import platformManage from './modules/platform-manage'
+import router from './modules/router'
 import layoutHeaderAside from '@/layout/header-aside'
 
 /**
@@ -45,7 +46,8 @@ const frameIn = [
       }
     ]
   },
-  platformManage
+  platformManage,
+    router
 ]
 
 /**

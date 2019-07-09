@@ -286,8 +286,11 @@ func executeFrontendD2admim(tables []string) {
 	// pages 生成页面
 	page := util.GetTemplateByPath("template/frontend/d2admin/src/pages/page.vue.tpl")
 	// router 生成路由
-	/*api := util.GetTemplateByPath("template/frontend/d2admin/src/api/api.js.tpl")
-	var structNames, routers []string
+	router := util.GetTemplateByPath("template/frontend/d2admin/src/router/modules/router.js.tpl")
+	// menu 生成菜单
+	menu := util.GetTemplateByPath("template/frontend/d2admin/src/menu/aside.js.tpl")
+	var tableList []*dbmeta.ModelInfo
+	/*var structNames, routers []string
 	var modelPath, handlePath, routerPath, testPath, singName string
 	var fieldsMap map[string]bool*/
 	var routerPath, pagePath string
@@ -304,5 +307,17 @@ func executeFrontendD2admim(tables []string) {
 		//page生成
 		pagePath = fmt.Sprintf(getTargetPath("manage/src/pages/%s.vue"), modelInfo.TableName)
 		util.ExecuteTemplate(page, pagePath, map[string]interface{}{"modelInfo": modelInfo})
+		// add router
+		tableList = append(tableList, modelInfo)
 	}
+	//main
+	util.ExecuteTemplateBase(router, getTargetPath("manage/src/router/modules/router.js"), map[string]interface{}{"tableList": tableList}, func(i []byte) []byte {
+		str := string(i)
+		return []byte(strings.ReplaceAll(strings.ReplaceAll(str, "`", ""), "&", "`"))
+	})
+	//menu
+	util.ExecuteTemplateBase(menu, getTargetPath("manage/src/menu/aside.js"), map[string]interface{}{"tableList": tableList}, func(i []byte) []byte {
+		str := string(i)
+		return []byte(strings.ReplaceAll(strings.ReplaceAll(str, "`", ""), "&", "`"))
+	})
 }

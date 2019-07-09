@@ -96,14 +96,18 @@ type ColumnInfo struct {
 	ColumnName             string      `json:"column_name"`              //字段名称
 	IsNullable             string      `json:"is_nullable"`              //是否允许为空
 	DataType               string      `json:"data_type"`                //字段类型
+	ColumnType             string      `json:"column_type"`              //详细字段类型
 	CharacterMaximumLength string      `json:"character_maximum_length"` //长度
 	CharacterOctetLength   string      `json:"character_octet_length"`   //字符八位字节长度
 	NumericPrecision       string      `json:"numeric_precision"`        //double/floag/numeric 长度
 	NumericScale           string      `json:"numeric_scale"`            //小数点
 	ColumnComment          string      `json:"column_comment"`           //字段备注
+	ColumnItemValue        []string    //字段项值，如：enum('保密','男','女')
 	ColumnCNName           string      //中文名称
 	DataTypeLower          string      //小写
 	StructName             string      //StructName
+	Valid                  []string    //字段验证标记
+	FormType               string      //表单类型，text:字符长度小于100输入框，number：数字类型，time:时间类型，date：日期类型，
 	AddTestValue           interface{} //添加测试的，字段test时值
 	UpdateTestValue        interface{} //修改测试的，字段test时值
 	PrimaryKey             bool        //是否为主键
@@ -160,7 +164,7 @@ func GetTablePrimaryKey(db *sql.DB, dbName, tableName string) (primaryKey []stri
 func GetTableColumnRemark(db *sql.DB, dbName, tableName string) (cols []*ColumnInfo, err error) {
 	var data []map[string]interface{}
 	s := `select column_name,is_nullable,data_type,character_maximum_length,character_octet_length,numeric_precision,
-	numeric_scale,column_comment from information_schema.columns where table_name='%s' AND table_schema='%s'`
+	numeric_scale,column_comment,column_type from information_schema.columns where table_name='%s' AND table_schema='%s'`
 	data, err = Query(db, fmt.Sprintf(s, tableName, dbName))
 	if err != nil {
 		return
@@ -307,6 +311,7 @@ func generateFieldsTypes(columns []*ColumnInfo, fieldDef map[string]interface{},
 		if len(valid) > 0 {
 			v := extractValid(c.ColumnComment)
 			if v != "" {
+				c.Valid = strings.Split(v, ";")
 				valid = append(valid, v)
 			}
 			annotations = append(annotations, fmt.Sprintf("valid:\"%s\"", strings.Join(valid, ";")))
@@ -334,6 +339,15 @@ func extractValid(str string) (v string) {
 	if len(params) > 1 {
 		v = strings.TrimRight(params[1], ";")
 		return
+	}
+	return
+}
+
+func EnumValue(v string) (val []string) {
+	reg := regexp.MustCompile(`'(.*?)'`)
+	params := reg.FindAllString(v, -1)
+	for _, value := range params {
+		val = append(val, strings.Trim(value, "'"))
 	}
 	return
 }
@@ -385,10 +399,28 @@ func sqlTypeToGoType(c *ColumnInfo, gureguTypes bool) (varType string, valid []s
 		}
 		varType = golangInt64
 		return
-	case "char", "enum", "varchar", "longtext", "mediumtext", "text", "tinytext":
+	case "char", "varchar", "longtext", "mediumtext", "text", "tinytext":
 		addDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength) / 2)
 		updateDefVal = GetRandomString(StrToInt(c.CharacterMaximumLength) / 2)
 		valid = append(valid, fmt.Sprintf("MaxSize(%s)", c.CharacterMaximumLength))
+		if nullable {
+			if gureguTypes {
+				varType = gureguNullString
+				return
+			}
+			varType = sqlNullString
+			return
+		}
+		varType = "string"
+		return
+	case "enum":
+		c.ColumnItemValue = EnumValue(c.ColumnType)
+		if len(c.ColumnItemValue) > 0 {
+			addDefVal = c.ColumnItemValue[0]
+		}
+		if len(c.ColumnItemValue) > 1 {
+			updateDefVal = c.ColumnItemValue[1]
+		}
 		if nullable {
 			if gureguTypes {
 				varType = gureguNullString
