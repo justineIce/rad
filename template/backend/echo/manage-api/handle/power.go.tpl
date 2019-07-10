@@ -23,7 +23,7 @@ func PowerCheck(userInfo model.SysUserLoginInfo, createBy string) (err error) {
 		err = errors.New("获取创建者失败")
 		return
 	}
-	if !userInfo.IsSuperAdmin && strings.Contains(vSysUser.OfficeRelationIds, userInfo.OfficeRelationIds) {
+	if !userInfo.IsSuperAdmin && strings.Contains(vSysUser.RelationIds, userInfo.OfficeRelationIds) {
 		err = errors.New("无权限操作")
 		return
 	}

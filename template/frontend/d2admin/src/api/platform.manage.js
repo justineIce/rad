@@ -115,7 +115,7 @@ export function AddSystemManage (data) {
 // 获取用户列表
 export function GetAuthorityList (data) {
   return request({
-    url: '/platformManage/system/manage/list',
+    url: '/auth/sys_user/page',
     method: 'post',
     data
   })

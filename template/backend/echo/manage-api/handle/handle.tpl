@@ -38,6 +38,42 @@ func Get{{.StructName}}All(c echo.Context) error {
 
 // {{.TableRemark}}获取分页数据
 func Get{{.StructName}}Page(c echo.Context) error {
+    {{if not (eq .TableView "")}}
+
+    db := global.DB.Model(&model.{{.ViewInfo.StructName}}{}).Order("id DESC")
+    	{{if or .FieldsMap.office_id}}
+        loginInfo := GetLoginInfo(c)
+    	// 非超级管理员 && 数据权限验证
+    	if !loginInfo.IsSuperAdmin {
+            db = db.Select("{{.TableName}}.*").Joins("left join sys_office on sys_office.id=office_id").
+            Where("relation_ids LIKE ?",loginInfo.OfficeRelationIds+"%")
+    	}
+    	{{end}}
+    	/*	条件搜索范例
+    		name := c.FormValue("name")
+    		if name != "" {
+    			db = db.Where("name like ?", fmt.Sprintf("%%s%%",name))
+    		}
+    	*/
+    	var count int
+    	var list []model.{{.ViewInfo.StructName}}
+    	db.Count(&count)
+    	pageIndex := utils.GetPageIndex(c.FormValue("page_index"))
+    	pageSize := utils.GetPageSize(c.FormValue("page_size"))
+    	if err := db.Limit(pageSize).Offset((pageIndex - 1) * pageSize).Scan(&list).Error; err != nil {
+    		global.Log.Error("Get{{.ViewInfo.StructName}}Page error：%v", err)
+    		return utils.ErrorNull(c, utils.GetFailResult)
+    	}
+    	return utils.SuccessNullMsg(c, &utils.PageData{
+    		PageIndex:  pageIndex,
+    		PageSize:   pageSize,
+    		Count:      count,
+    		PageNumber: utils.GetPageNumber(count, pageSize),
+    		Data:       list,
+    	})
+
+    {{else}}
+
 	db := global.DB.Model(&model.{{.StructName}}{}).Order("id DESC")
 	{{if or .FieldsMap.office_id}}
     loginInfo := GetLoginInfo(c)
@@ -69,6 +105,8 @@ func Get{{.StructName}}Page(c echo.Context) error {
 		PageNumber: utils.GetPageNumber(count, pageSize),
 		Data:       list,
 	})
+
+	{{end}}
 }
 
 // {{.TableRemark}}保存数据

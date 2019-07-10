@@ -28,6 +28,7 @@ var (
 	dbName               = goopt.String([]string{"--dbName"}, "test", "数据库名称，默认：test")
 	dbParameters         = goopt.String([]string{"--dbParameters"}, "charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true", "数据库连接字符串，默认：charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true")
 	sqlTable             = goopt.String([]string{"--table"}, "", "需要转换的表名，默认：*")
+	sqlView              = goopt.String([]string{"--view"}, "", "需要转换的表名，默认：*")
 	packageName          = goopt.String([]string{"--package"}, "", "指定项目包名，默认：当前执行路径/example")
 	target               = goopt.String([]string{"--target"}, "", "指定保存目录")
 	frontend             = goopt.String([]string{"--frontend"}, "d2admin", "前端模板框架，默认：d2admin")
@@ -108,11 +109,20 @@ func generateFrontend(curPath string) {
 func generateBackend(curPath string) {
 	var err error
 	//获取表信息
-	var tables []string
+	var tables, views []string
 	if *sqlTable != "" {
 		tables = strings.Split(*sqlTable, ",")
 	} else {
 		tables, err = schema.TableNames(DB)
+		if err != nil {
+			panic(err)
+			return
+		}
+	}
+	if *sqlView != "" {
+		views = strings.Split(*sqlView, ",")
+	} else {
+		views, err = schema.ViewNames(DB)
 		if err != nil {
 			panic(err)
 			return
@@ -126,13 +136,13 @@ func generateBackend(curPath string) {
 	// 生成代码
 	switch *backend {
 	case "echo":
-		executeBackendEcho(tables)
+		executeBackendEcho(tables, views)
 	}
 
 	//生成后端代码
 	switch *frontend {
 	case "d2admin":
-		executeFrontendD2admim(tables)
+		executeFrontendD2admim(tables, views)
 	}
 }
 
@@ -140,7 +150,7 @@ func getTargetPath(path string) string {
 	return fmt.Sprintf("%s/%s", targetPath, path)
 }
 
-func executeBackendEcho(tables []string) {
+func executeBackendEcho(tables, views []string) {
 	tempData := map[string]interface{}{
 		"PackageName": packageNameImportURL,
 		"ProjectName": projectName,
@@ -237,7 +247,20 @@ func executeBackendEcho(tables []string) {
 	var structNames, routers []string
 	var modelPath, handlePath, routerPath, testPath string
 	var fieldsMap map[string]bool
-	// generate go files for each table
+	var viewsMap = make(map[string]dbmeta.ModelInfo, 0)
+	var viewInfo dbmeta.ModelInfo
+	//视图
+	for _, tableName := range views {
+		structName := dbmeta.FmtFieldName(tableName)
+		structName = inflection.Singular(structName)
+		modelInfo := dbmeta.GenerateStruct(DB, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
+		viewsMap[tableName] = *modelInfo
+		modelPath = fmt.Sprintf(getTargetPath("model/%s.go"), tableName)
+		util.CreateFile(modelPath)
+		//model
+		util.ExecuteTemplate(m, modelPath, modelInfo)
+	}
+	//表
 	for _, tableName := range tables {
 		structName := dbmeta.FmtFieldName(tableName)
 		structName = inflection.Singular(structName)
@@ -252,6 +275,10 @@ func executeBackendEcho(tables []string) {
 		util.CreateFile(routerPath)
 		util.CreateFile(testPath)
 		fieldsMap = make(map[string]bool, 0)
+		viewInfo = dbmeta.ModelInfo{}
+		if modelInfo.TableView != "" {
+			viewInfo = viewsMap[modelInfo.TableView]
+		}
 		for _, v := range modelInfo.Columns {
 			fieldsMap[v.ColumnName] = true
 		}
@@ -260,7 +287,7 @@ func executeBackendEcho(tables []string) {
 		//handle
 		util.ExecuteTemplate(h, handlePath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
 			"SingName": modelInfo.SingName, "TableRemark": modelInfo.TableRemark, "IDPrimaryKeyInt": modelInfo.IDPrimaryKeyInt,
-			"FieldsMap": fieldsMap, "TableName": tableName})
+			"FieldsMap": fieldsMap, "TableName": tableName, "TableView": modelInfo.TableView, "ViewInfo": viewInfo})
 		//test
 		util.ExecuteTemplateBase(t, testPath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
 			"TableName": tableName, "Columns": modelInfo.Columns}, func(i []byte) []byte {
@@ -280,7 +307,7 @@ func executeBackendEcho(tables []string) {
 }
 
 //生成d2admin
-func executeFrontendD2admim(tables []string) {
+func executeFrontendD2admim(tables, views []string) {
 	// api	生成api
 	api := util.GetTemplateByPath("template/frontend/d2admin/src/api/api.js.tpl")
 	// pages 生成页面
@@ -294,10 +321,24 @@ func executeFrontendD2admim(tables []string) {
 	var modelPath, handlePath, routerPath, testPath, singName string
 	var fieldsMap map[string]bool*/
 	var routerPath, pagePath string
+	var viewsMap = make(map[string]dbmeta.ModelInfo, 0)
+	var viewInfo dbmeta.ModelInfo
+	//视图
+	for _, tableName := range views {
+		structName := dbmeta.FmtFieldName(tableName)
+		structName = inflection.Singular(structName)
+		modelInfo := dbmeta.GenerateStruct(DB, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
+		viewsMap[tableName] = *modelInfo
+	}
+	//表
 	for _, tableName := range tables {
 		structName := dbmeta.FmtFieldName(tableName)
 		structName = inflection.Singular(structName)
 		modelInfo := dbmeta.GenerateStruct(DB, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
+		viewInfo = dbmeta.ModelInfo{}
+		if modelInfo.TableView != "" {
+			viewInfo = viewsMap[modelInfo.TableView]
+		}
 		//api生成
 		routerPath = fmt.Sprintf(getTargetPath("manage/src/api/%s.js"), modelInfo.TableName)
 		util.ExecuteTemplateBase(api, routerPath, map[string]interface{}{"modelInfo": modelInfo}, func(i []byte) []byte {
@@ -306,10 +347,11 @@ func executeFrontendD2admim(tables []string) {
 		})
 		//page生成
 		pagePath = fmt.Sprintf(getTargetPath("manage/src/pages/%s.vue"), modelInfo.TableName)
-		util.ExecuteTemplate(page, pagePath, map[string]interface{}{"modelInfo": modelInfo})
+		util.ExecuteTemplate(page, pagePath, map[string]interface{}{"modelInfo": modelInfo, "ViewInfo": viewInfo})
 		// add router
 		tableList = append(tableList, modelInfo)
 	}
+
 	//main
 	util.ExecuteTemplateBase(router, getTargetPath("manage/src/router/modules/router.js"), map[string]interface{}{"tableList": tableList}, func(i []byte) []byte {
 		str := string(i)

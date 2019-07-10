@@ -3,8 +3,8 @@
     <div class="jus-table">
         <div class="jus-table-container">
             <!--条件查询-->
-            <div class="jus-table-container-query" v-if="queryForm">
-                <JusForm v-if="queryFormTemplate"
+            <div class="jus-table-container-query" v-if="queryForm || addMode">
+                <JusForm v-if="queryFormTemplate || addMode"
                          :inline="true"
                          :template="queryFormTemplate"
                          :data="queryFormData"

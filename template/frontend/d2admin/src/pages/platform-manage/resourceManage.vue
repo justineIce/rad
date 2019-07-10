@@ -707,7 +707,7 @@ export default {
       }).then((res) => {
         if (res.ret === 200) {
           var data = res.data
-          this.data = data.Data
+          this.data = data.data
           this.pagination = {
             currentPage: data.pageIndex,
             pageSize: data.pageSize,
