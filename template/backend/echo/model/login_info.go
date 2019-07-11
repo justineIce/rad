@@ -86,17 +86,16 @@ func GetLoginInfo(vSysUser VSysUser, roles []VSysUserRole, menus []VSysRoleMenu,
 		OfficeParentId:    vSysUser.OfficeParentID,
 		OfficeRelationIds: vSysUser.RelationIds,
 		SysRoles:          roles,
-		//SysMenuThree:      GetSysMenuThree(menus, "0"),
-		SysMenu:      menus,
-		SysMenuBtns:  menuBtns,
-		IsAdmin:      IsAdmin(roles),
-		IsSuperAdmin: IsSuperAdmin(roles),
-		PathAuth:     make(map[string]time.Time, 0),
+		SysMenu:           menus,
+		SysMenuBtns:       menuBtns,
+		IsAdmin:           IsAdmin(roles),
+		IsSuperAdmin:      IsSuperAdmin(roles),
+		PathAuth:          make(map[string]time.Time, 0),
 	}
 }
 
 //获取树形菜单
-func GetSysMenuThree(menus []VSysRoleMenu, parentId string) []SysMenuTree {
+func GetSysMenuTree(menus []VSysRoleMenu, parentId string) []SysMenuTree {
 	var smuts = make([]SysMenuTree, 0)
 	var smut SysMenuTree
 	for i := 0; i < len(menus); i++ {
@@ -114,7 +113,7 @@ func GetSysMenuThree(menus []VSysRoleMenu, parentId string) []SysMenuTree {
 		smut.RelationIds = menus[i].RelationIds
 		smut.Remarks = menus[i].Remarks
 		smut.Target = menus[i].Target
-		smut.Children = GetSysMenuThree(menus, menus[i].ID)
+		smut.Children = GetSysMenuTree(menus, menus[i].ID)
 		smuts = append(smuts, smut)
 	}
 	return smuts
