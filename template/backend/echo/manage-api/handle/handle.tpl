@@ -28,12 +28,21 @@ func Get{{.StructName}}(c echo.Context) error {
 // {{.TableRemark}}获取所有数据
 func Get{{.StructName}}All(c echo.Context) error {
 	id := c.FormValue("id")
-	var {{.SingName}} []model.{{.StructName}}
-	if err := global.DB.Find(&{{.SingName}}, id).Error; err != nil {
-		global.Log.Error("Get{{.StructName}}All error：%v", err)
-		return utils.ErrorNull(c, utils.GetFailResult)
-	}
-	return utils.SuccessNullMsg(c, {{.SingName}})
+    {{if not (eq .TableView "")}}
+        var {{.ViewInfo.SingName}} []model.{{.ViewInfo.StructName}}
+        if err := global.DB.Find(&{{.ViewInfo.SingName}}, id).Error; err != nil {
+            global.Log.Error("Get{{.ViewInfo.StructName}}All error：%v", err)
+            return utils.ErrorNull(c, utils.GetFailResult)
+        }
+        return utils.SuccessNullMsg(c, {{.ViewInfo.SingName}})
+	{{else}}
+	    var {{.SingName}} []model.{{.StructName}}
+        if err := global.DB.Find(&{{.SingName}}, id).Error; err != nil {
+            global.Log.Error("Get{{.StructName}}All error：%v", err)
+            return utils.ErrorNull(c, utils.GetFailResult)
+        }
+        return utils.SuccessNullMsg(c, {{.SingName}})
+	{{end}}
 }
 
 // {{.TableRemark}}获取分页数据
@@ -160,7 +169,7 @@ func Save{{.StructName}}(c echo.Context) error {
 	}
 	errs := validation.Valid(&{{.SingName}})
 	if len(errs) > 0 {
-		return utils.Error(c, "参数验证失败", errs)
+		return utils.ParamsError(c, errs)
 	}
 	if isEditFlag {
 		//修改

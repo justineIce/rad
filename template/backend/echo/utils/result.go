@@ -16,14 +16,16 @@ type ResultParam struct {
 const (
 	//成功
 	SuccessCode = 200
-	//数据为空
-	NullDataCode = 404
 	//错误
 	ErrorCode = 400
 	//授权失败
 	AuthFailCode = 401
+	//参数校验失败
+	ParamsErrorCode = 402
 	//权限不足
 	PermissionDeniedCode = 403
+	//数据为空
+	NullDataCode = 404
 	//图片验证码为空
 	ImgCodeNull = 500
 	//图片验证码错误
@@ -34,6 +36,7 @@ const (
 
 const (
 	GetParsFailResult   = "获取参数失败"
+	ParsFailResult      = "参数校验失败"
 	GetDataNullResult   = "数据不存在"
 	GetDataFailResult   = "获取数据失败"
 	AddSuccessResult    = "添加成功"
@@ -91,6 +94,10 @@ func Error(c echo.Context, msg string, data interface{}) error {
 
 func ErrorNull(c echo.Context, msg string) error {
 	return Result(c, ErrorCode, msg, nil)
+}
+
+func ParamsError(c echo.Context, data interface{}) error {
+	return Result(c, ParamsErrorCode, ParsFailResult, data)
 }
 
 func NullData(c echo.Context) error {
