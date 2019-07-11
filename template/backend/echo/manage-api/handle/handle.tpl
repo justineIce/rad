@@ -17,11 +17,11 @@ func Get{{.StructName}}(c echo.Context) error {
 		global.Log.Error("Get{{.StructName}} error：%v", err)
 		return utils.ErrorNull(c, utils.GetFailResult)
 	}
-	{{ range .Columns }}{{if eq .ColumnName "created_by" }}
+	{{if .FieldsMap.created_by}}
 	loginInfo := GetLoginInfo(c)
-	if err := PowerCheck(loginInfo, {{$.SingName}}.CreatedBy); err != nil {
+	if err := PowerCheck(loginInfo, {{.SingName}}.CreatedBy); err != nil {
 		return utils.ErrorNull(c, err.Error())
-	}{{end}}{{end}}
+	}{{end}}
 	return utils.SuccessNullMsg(c, {{.SingName}})
 }
 
@@ -38,15 +38,26 @@ func Get{{.StructName}}All(c echo.Context) error {
 
 // {{.TableRemark}}获取分页数据
 func Get{{.StructName}}Page(c echo.Context) error {
-    {{if not (eq .TableView "")}}
-
+    {{- if not (eq .TableView "") -}}
+    //视图查询
     db := global.DB.Model(&model.{{.ViewInfo.StructName}}{}).Order("id DESC")
-    	{{if or .FieldsMap.office_id}}
+    	{{if .ViewInfo.FieldsMap.office_id}}
         loginInfo := GetLoginInfo(c)
     	// 非超级管理员 && 数据权限验证
     	if !loginInfo.IsSuperAdmin {
-            db = db.Select("{{.TableName}}.*").Joins("left join sys_office on sys_office.id=office_id").
-            Where("relation_ids LIKE ?",loginInfo.OfficeRelationIds+"%")
+            if loginInfo.IsAdmin {
+                {{- if .ViewInfo.FieldsMap.relation_ids -}}
+                    //管理员 - 可查看旗下组织机构的数据
+                    db = db.Where("relation_ids LIKE ?",loginInfo.OfficeRelationIds+"%")
+                {{else}}
+                    //管理员 - 可查看旗下组织机构的数据
+                    db = db.Select("{{.ViewInfo.TableName}}.*").Joins("left join sys_office on sys_office.id=office_id").
+                    Where("relation_ids LIKE ?",loginInfo.OfficeRelationIds+"%")
+                {{- end -}}
+            }else{
+                //普通账号 - 仅能看自己的数据
+                db = db.Where("created_by", loginInfo.ID)
+            }
     	}
     	{{end}}
     	/*	条件搜索范例
@@ -71,16 +82,25 @@ func Get{{.StructName}}Page(c echo.Context) error {
     		PageNumber: utils.GetPageNumber(count, pageSize),
     		Data:       list,
     	})
-
     {{else}}
-
 	db := global.DB.Model(&model.{{.StructName}}{}).Order("id DESC")
-	{{if or .FieldsMap.office_id}}
+	{{- if or .FieldsMap.office_id -}}
     loginInfo := GetLoginInfo(c)
 	// 非超级管理员 && 数据权限验证
 	if !loginInfo.IsSuperAdmin {
-        db = db.Select("{{.TableName}}.*").Joins("left join sys_office on sys_office.id=office_id").
-        Where("relation_ids LIKE ?",loginInfo.OfficeRelationIds+"%")
+        if loginInfo.IsAdmin {
+            {{- if .FieldsMap.relation_ids -}}
+                //管理员 - 可查看旗下组织机构的数据
+                db = db.Where("relation_ids LIKE ?",loginInfo.OfficeRelationIds+"%")
+            {{else}}
+                //管理员 - 可查看旗下组织机构的数据
+                db = db.Select("{{.TableName}}.*").Joins("left join sys_office on sys_office.id=office_id").
+                Where("relation_ids LIKE ?",loginInfo.OfficeRelationIds+"%")
+            {{- end -}}
+		} else {
+			//普通账号 - 仅能看自己的数据
+			db = db.Where("created_by", loginInfo.ID)
+		}
 	}
 	{{end}}
 	/*	条件搜索范例
@@ -105,7 +125,6 @@ func Get{{.StructName}}Page(c echo.Context) error {
 		PageNumber: utils.GetPageNumber(count, pageSize),
 		Data:       list,
 	})
-
 	{{end}}
 }
 

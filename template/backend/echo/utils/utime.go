@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"github.com/zxbit2011/zm/utils/convert"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -65,7 +65,11 @@ func ParseExcelDate(date string) (d *time.Time, err error) {
 			if err != nil {
 				return
 			}
-			days := convert.MustInt(date)
+			var days int
+			days, err = strconv.Atoi(date)
+			if err != nil {
+				return
+			}
 			date2 = date2.AddDate(0, 0, days-2)
 			d = &date2
 			return

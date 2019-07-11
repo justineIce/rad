@@ -20,6 +20,7 @@ type ModelInfo struct {
 	TableView       string //使用视图显示
 	TableRemark     string
 	TableHandle     map[string]bool
+	FieldsMap       map[string]bool
 	Fields          []string
 	PrimaryKey      []string
 	Columns         []*ColumnInfo
@@ -286,6 +287,11 @@ func GenerateStruct(db *sql.DB, dbName string, tableName string, structName stri
 		}
 	}
 
+	fieldsMap := make(map[string]bool, 0)
+	for _, v := range cols {
+		fieldsMap[v.ColumnName] = true
+	}
+
 	var modelInfo = &ModelInfo{
 		PackageName:     pkgName,
 		StructName:      structName,
@@ -299,6 +305,7 @@ func GenerateStruct(db *sql.DB, dbName string, tableName string, structName stri
 		PrimaryKey:      primaryKey,
 		Columns:         cols,
 		IDPrimaryKeyInt: idPrimaryKeyInt,
+		FieldsMap:       fieldsMap,
 	}
 	return modelInfo
 }

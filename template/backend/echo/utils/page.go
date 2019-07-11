@@ -3,8 +3,8 @@ package utils
 import (
 	"fmt"
 	"github.com/jinzhu/gorm"
-	"github.com/zxbit2011/zm/utils/convert"
 	"math"
+	"strconv"
 )
 
 type PageTable struct {
@@ -30,7 +30,11 @@ const PageSize = 10
 func GetPageIndex(pi string) int {
 	pageIndex := 1
 	if pi != "" && IsValidNumber(pi) {
-		pageIndex = convert.MustInt(pi)
+		var err error
+		pageIndex, err = strconv.Atoi(pi)
+		if err != nil {
+			pageIndex = 1
+		}
 	}
 	return pageIndex
 }
@@ -38,7 +42,11 @@ func GetPageIndex(pi string) int {
 func GetPageSize(ps string) int {
 	pageSize := PageSize
 	if ps != "" && IsValidNumber(ps) {
-		pageSize = convert.MustInt(ps)
+		var err error
+		pageSize, err = strconv.Atoi(ps)
+		if err != nil {
+			pageSize = 1
+		}
 	}
 	if pageSize > 100 {
 		//防止大量数据查询

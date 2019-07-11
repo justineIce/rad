@@ -9,7 +9,7 @@ validation
 Direct Use:
 
 	import (
-		"github.com/zxbit2011/zm/common/utils/validation"
+		"github.com/{PACKAGE}/utils/validation"
 		"log"
 	)
 

@@ -43,38 +43,55 @@ export default {
         {{end}}
         {{- end -}}
         {{- end -}}
-      {{end}}
+      {{- end -}}
       ],
       data: [],
-      {{- if or .modelInfo.TableHandle.insert .modelInfo.TableHandle.update -}}
+      {{if or .modelInfo.TableHandle.insert .modelInfo.TableHandle.update}}
       addTemplate: {
-        {{- range .modelInfo.Columns -}}{{if not .PageForm.none}}{{if and (not (eq .ColumnName "id")) (not (eq .ColumnName "created_at")) (not (eq .ColumnName "created_by")) (not (eq .ColumnName "updated_by")) (not (eq .ColumnName "updated_at")) (not (eq .ColumnName "deleted_at"))}}
-        {{if eq .DataTypeLower "date"}}{{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-date-picker',type:'date' }},
-        {{else if eq .DataTypeLower "datetime"}}{{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-date-picker',type:'datetime' }},
-        {{else if eq .DataTypeLower "time"}}{{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-time-select' }},
-        {{else if and (gt .CharacterMaximumLength 300) (or (eq .DataTypeLower "char") (eq .DataTypeLower "varchar") (eq .DataTypeLower "longtext") (eq .DataTypeLower "mediumtext") (eq .DataTypeLower "text") (eq .DataTypeLower "tinytext"))}}
-          {{.StructName}}: { title: '{{.ColumnCNName}} {{(gt .CharacterMaximumLength 300)}} {{(.CharacterMaximumLength)}}', component: { name: 'el-input', type: 'textarea', rows: 5 }},
-        {{else if eq .DataTypeLower "enum"}}
-          {{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-radio',options:[{{ range .ColumnItemValue }}{value:'{{.}}',label:'{{.}}'},{{end}}] }},
-        {{else if or (eq .DataTypeLower "decimal") (eq .DataTypeLower "double") (eq .DataTypeLower "float") }}
-          {{.StructName}}: { title: '{{.ColumnCNName}}', component: {name: 'el-input', type: 'number', min: 0 }},
-        {{else}}
-          {{.StructName}}: { title: '{{.ColumnCNName}}' },
-        {{- end -}}
-        {{- end -}}{{- end -}}{{- end -}}
-      },{{- end -}}
+        {{range .modelInfo.Columns}}
+        {{- if not .PageForm.none -}}
+        {{- if and (not (eq .ColumnName "id")) (not (eq .ColumnName "created_at")) (not (eq .ColumnName "created_by")) (not (eq .ColumnName "updated_by")) (not (eq .ColumnName "updated_at")) (not (eq .ColumnName "deleted_at")) -}}
+        {{- if eq .DataTypeLower "date" -}}
+        {{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-date-picker',type:'date' }},
+        {{- else if eq .DataTypeLower "datetime" -}}
+        {{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-date-picker',type:'datetime' }},
+        {{- else if eq .DataTypeLower "time" -}}
+        {{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-time-select' }},
+        {{- else if and (gt .CharacterMaximumLength 300) (or (eq .DataTypeLower "char") (eq .DataTypeLower "varchar") (eq .DataTypeLower "longtext") (eq .DataTypeLower "mediumtext") (eq .DataTypeLower "text") (eq .DataTypeLower "tinytext")) -}}
+        {{.StructName}}: { title: '{{.ColumnCNName}} {{(gt .CharacterMaximumLength 300)}} {{(.CharacterMaximumLength)}}', component: { name: 'el-input', type: 'textarea', rows: 5 }},
+        {{- else if eq .DataTypeLower "enum" -}}
+        {{.StructName}}: { title: '{{.ColumnCNName}}', component: { name: 'el-radio',options:[{{ range .ColumnItemValue }}{value:'{{.}}',label:'{{.}}'},{{end}}] }},
+        {{- else if or (eq .DataTypeLower "decimal") (eq .DataTypeLower "double") (eq .DataTypeLower "float") -}}
+        {{.StructName}}: { title: '{{.ColumnCNName}}', component: {name: 'el-input', type: 'number', min: 0 }},
+        {{- else -}}
+        {{.StructName}}: { title: '{{.ColumnCNName}}' },{{end}}
+        {{end}}
+        {{- end -}}{{- end -}}
+      },{{end}}
       rowHandle: {
         edit: {},
         remove: {}
       },
-      rules: {  {{ range .modelInfo.Columns }}{{if and (not (eq .ColumnName "id")) (not (eq .ColumnName "created_at")) (not (eq .ColumnName "created_by")) (not (eq .ColumnName "updated_by")) (not (eq .ColumnName "updated_at")) (not (eq .ColumnName "deleted_at"))}}
+      rules: {
+      {{- range .modelInfo.Columns -}}
+      {{if and (not (eq .ColumnName "id")) (not (eq .ColumnName "created_at")) (not (eq .ColumnName "created_by")) (not (eq .ColumnName "updated_by")) (not (eq .ColumnName "updated_at")) (not (eq .ColumnName "deleted_at"))}}
          {{.StructName}}: [
-           {{ if not (eq .IsNullable "YES")}}{ required: true,message: '请输入{{.ColumnCNName}}', trigger: 'blur' },{{end}}
-           {{if or (eq .DataTypeLower "date") (eq .DataTypeLower "datetime") (eq .DataTypeLower "time") (eq .DataTypeLower "timestamp")}}{type: 'date',message: '请正确选择的时间', trigger: ['blur', 'change']}
-           {{else if not (eq .CharacterMaximumLength 0)}}{ max: {{.CharacterMaximumLength}}, message: '长度不能超过{{.CharacterMaximumLength}}个字符', trigger: 'blur' },{{end}}
-           {{ range .Valid }}{{if eq . "Email"}}{ type: 'email', message: '请输入正确的邮箱地址', trigger: ['blur', 'change'] },{{end}}
+           {{if not (eq .IsNullable "YES")}}
+           { required: true,message: '请输入{{.ColumnCNName}}', trigger: 'blur' },
            {{end}}
-         ],{{end}}{{end}}
+           {{- if or (eq .DataTypeLower "date") (eq .DataTypeLower "datetime") (eq .DataTypeLower "time") (eq .DataTypeLower "timestamp") -}}
+           { type: 'date',message: '请正确选择的时间', trigger: ['blur', 'change'] }
+           {{- else if not (eq .CharacterMaximumLength 0) -}}
+           { max: {{.CharacterMaximumLength}}, message: '长度不能超过{{.CharacterMaximumLength}}个字符', trigger: 'blur' },
+           {{end}}
+           {{- range .Valid -}}
+           {{- if eq . "Email" -}}
+           { type: 'email', message: '请输入正确的邮箱地址', trigger: ['blur', 'change'] },
+           {{- end -}}
+           {{- end -}}
+         ],
+         {{- end -}}
+         {{end}}
       }
     }
   },

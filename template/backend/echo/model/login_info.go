@@ -2,8 +2,13 @@ package model
 
 import (
 	"github.com/dgrijalva/jwt-go"
-	"github.com/zxbit2011/zm/utils/enum"
 	"time"
+)
+
+const (
+	UserPostSuperAdminCode = "2" //超级管理员
+	UserPostAdminCode      = "1" //管理员
+	UserPostGroupCode      = "0" //普通账号
 )
 
 //后台系统登陆
@@ -54,7 +59,7 @@ func (info SysUserLoginInfo) GetLoginToken() *SysUserLoginToken {
 //是否为超级管理员
 func IsSuperAdmin(roles []VSysUserRole) bool {
 	for i := 0; i < len(roles); i++ {
-		if roles[i].RoleType == enum.UserPostSuperAdminCode {
+		if roles[i].RoleType == UserPostSuperAdminCode {
 			return true
 		}
 	}
@@ -64,7 +69,7 @@ func IsSuperAdmin(roles []VSysUserRole) bool {
 //是否为超级管理员
 func IsAdmin(roles []VSysUserRole) bool {
 	for i := 0; i < len(roles); i++ {
-		if roles[i].RoleType == enum.UserPostAdminCode {
+		if roles[i].RoleType == UserPostAdminCode {
 			return true
 		}
 	}

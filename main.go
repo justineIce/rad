@@ -246,7 +246,6 @@ func executeBackendEcho(tables, views []string) {
 
 	var structNames, routers []string
 	var modelPath, handlePath, routerPath, testPath string
-	var fieldsMap map[string]bool
 	var viewsMap = make(map[string]dbmeta.ModelInfo, 0)
 	var viewInfo dbmeta.ModelInfo
 	//视图
@@ -274,20 +273,16 @@ func executeBackendEcho(tables, views []string) {
 		util.CreateFile(handlePath)
 		util.CreateFile(routerPath)
 		util.CreateFile(testPath)
-		fieldsMap = make(map[string]bool, 0)
 		viewInfo = dbmeta.ModelInfo{}
 		if modelInfo.TableView != "" {
 			viewInfo = viewsMap[modelInfo.TableView]
-		}
-		for _, v := range modelInfo.Columns {
-			fieldsMap[v.ColumnName] = true
 		}
 		//model
 		util.ExecuteTemplate(m, modelPath, modelInfo)
 		//handle
 		util.ExecuteTemplate(h, handlePath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
 			"SingName": modelInfo.SingName, "TableRemark": modelInfo.TableRemark, "IDPrimaryKeyInt": modelInfo.IDPrimaryKeyInt,
-			"FieldsMap": fieldsMap, "TableName": tableName, "TableView": modelInfo.TableView, "ViewInfo": viewInfo})
+			"FieldsMap": modelInfo.FieldsMap, "TableName": tableName, "TableView": modelInfo.TableView, "ViewInfo": viewInfo})
 		//test
 		util.ExecuteTemplateBase(t, testPath, map[string]interface{}{"PackageName": packageNameImportURL, "StructName": structName,
 			"TableName": tableName, "Columns": modelInfo.Columns}, func(i []byte) []byte {
