@@ -134,18 +134,17 @@ func (r Required) IsSatisfied(obj interface{}) bool {
 	if t, ok := obj.(time.Time); ok {
 		return !t.IsZero()
 	}
-
 	if i, ok := obj.(null.Int); ok {
-		return !i.Valid
+		return i.Valid || i.Int64 != 0
 	}
 	if t, ok := obj.(null.Time); ok {
-		return !t.IsZero()
+		return t.Valid || !t.Time.IsZero()
 	}
 	if b, ok := obj.(null.Bool); ok {
-		return !b.Valid
+		return b.Valid || b.Bool
 	}
 	if str, ok := obj.(null.String); ok {
-		return !str.Valid
+		return str.Valid || len(strings.TrimSpace(str.String)) > 0
 	}
 	v := reflect.ValueOf(obj)
 	if v.Kind() == reflect.Slice {
@@ -193,11 +192,12 @@ func (m Min) IsSatisfied(obj interface{}) bool {
 		v = int(obj.(int16))
 	case int8:
 		v = int(obj.(int8))
-	case null.Int:
-		if i, ok := obj.(null.Int); ok {
-			return !i.Valid
-		}
 	default:
+		if i, ok := obj.(null.Int); ok {
+			if i.Valid {
+				v = int(i.Int64)
+			}
+		}
 		return false
 	}
 
@@ -243,11 +243,12 @@ func (m Max) IsSatisfied(obj interface{}) bool {
 		v = int(obj.(int16))
 	case int8:
 		v = int(obj.(int8))
-	case null.Int:
-		if i, ok := obj.(null.Int); ok {
-			return !i.Valid
-		}
 	default:
+		if i, ok := obj.(null.Int); ok {
+			if i.Valid {
+				v = int(i.Int64)
+			}
+		}
 		return false
 	}
 
@@ -309,7 +310,7 @@ func (m MinSize) IsSatisfied(obj interface{}) bool {
 		return utf8.RuneCountInString(str) >= m.Min
 	}
 	if str, ok := obj.(null.String); ok {
-		if !str.Valid {
+		if str.Valid {
 			return utf8.RuneCountInString(str.String) >= m.Min
 		}
 		return !str.Valid
@@ -348,7 +349,7 @@ func (m MaxSize) IsSatisfied(obj interface{}) bool {
 		return utf8.RuneCountInString(str) <= m.Max
 	}
 	if str, ok := obj.(null.String); ok {
-		if !str.Valid {
+		if str.Valid {
 			return utf8.RuneCountInString(str.String) <= m.Max
 		}
 		return !str.Valid
@@ -387,7 +388,7 @@ func (l Length) IsSatisfied(obj interface{}) bool {
 		return utf8.RuneCountInString(str) == l.N
 	}
 	if str, ok := obj.(null.String); ok {
-		if !str.Valid {
+		if str.Valid {
 			return utf8.RuneCountInString(str.String) == l.N
 		}
 		return !str.Valid
@@ -431,7 +432,7 @@ func (a Alpha) IsSatisfied(obj interface{}) bool {
 	}
 
 	if str, ok := obj.(null.String); ok {
-		if !str.Valid {
+		if str.Valid {
 			for _, v := range str.String {
 				if ('Z' < v || v < 'A') && ('z' < v || v < 'a') {
 					return false
@@ -474,7 +475,7 @@ func (n Numeric) IsSatisfied(obj interface{}) bool {
 		return true
 	}
 	if str, ok := obj.(null.String); ok {
-		if !str.Valid {
+		if str.Valid {
 			for _, v := range str.String {
 				if '9' < v || v < '0' {
 					return false
@@ -517,7 +518,7 @@ func (a AlphaNumeric) IsSatisfied(obj interface{}) bool {
 		return true
 	}
 	if str, ok := obj.(null.String); ok {
-		if !str.Valid {
+		if str.Valid {
 			for _, v := range str.String {
 				if ('Z' < v || v < 'A') && ('z' < v || v < 'a') && ('9' < v || v < '0') {
 					return false

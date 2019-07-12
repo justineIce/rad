@@ -382,7 +382,7 @@ func generateFieldsTypes(isView bool, columns []*ColumnInfo, fieldDef map[string
 			annotations = append(annotations, fmt.Sprintf("gorm:\"%s\"", strings.Join(gormTags, ";")))
 		}
 		if jsonAnnotation == true {
-			annotations = append(annotations, fmt.Sprintf("json:\"%s\" form:\"%s\" query:\"%s\"", c.StructName, c.StructName, key))
+			annotations = append(annotations, fmt.Sprintf("json:\"%s\" form:\"%s\" query:\"%s\"", c.StructName, key, key))
 		}
 		if !isView {
 			if len(valid) > 0 {

@@ -190,7 +190,11 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 			}
 			break
 		case "null.String":
-			structField.Set(reflect.ValueOf(null.NewString(val, false)))
+			if val != "" {
+				structField.Set(reflect.ValueOf(null.NewString(val, true)))
+			} else {
+				structField.Set(reflect.ValueOf(null.NewString(val, false)))
+			}
 			break
 		case "null.Int":
 			return setIntField(val, 64, structField)
@@ -198,28 +202,44 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 			if err != nil {
 				return err
 			}
-			structField.Set(reflect.ValueOf(null.NewInt(intVal, false)))
+			if val != "" {
+				structField.Set(reflect.ValueOf(null.NewInt(intVal, true)))
+			} else {
+				structField.Set(reflect.ValueOf(null.NewInt(intVal, false)))
+			}
 			break
 		case "null.Bool":
 			b, err := strconv.ParseBool(val)
 			if err != nil {
 				return err
 			}
-			structField.Set(reflect.ValueOf(null.NewBool(b, false)))
+			if val != "" {
+				structField.Set(reflect.ValueOf(null.NewBool(b, true)))
+			} else {
+				structField.Set(reflect.ValueOf(null.NewBool(b, false)))
+			}
 			break
 		case "null.Float":
 			floatVal, err := strconv.ParseFloat(val, 64)
 			if err != nil {
 				return err
 			}
-			structField.Set(reflect.ValueOf(null.NewFloat(floatVal, false)))
+			if val != "" {
+				structField.Set(reflect.ValueOf(null.NewFloat(floatVal, false)))
+			} else {
+				structField.Set(reflect.ValueOf(null.NewFloat(floatVal, false)))
+			}
 			break
 		case "null.Time":
 			t, err := dateparse.ParseAny(val)
 			if err != nil {
 				return err
 			}
-			structField.Set(reflect.ValueOf(null.NewTime(t, false)))
+			if val != "" {
+				structField.Set(reflect.ValueOf(null.NewTime(t, true)))
+			} else {
+				structField.Set(reflect.ValueOf(null.NewTime(t, false)))
+			}
 			break
 		}
 		break
