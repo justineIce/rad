@@ -51,8 +51,8 @@ func Get{{.StructName}}Page(c echo.Context) error {
     //视图查询
     db := global.DB.Model(&model.{{.ViewInfo.StructName}}{}).Order("id DESC")
     	{{if .ViewInfo.FieldsMap.office_id}}
-        loginInfo := GetLoginInfo(c)
     	// 非超级管理员 && 数据权限验证
+        var loginInfo = GetLoginInfo(c)
     	if !loginInfo.IsSuperAdmin {
             if loginInfo.IsAdmin {
                 {{- if .ViewInfo.FieldsMap.relation_ids -}}
@@ -94,8 +94,8 @@ func Get{{.StructName}}Page(c echo.Context) error {
     {{else}}
 	db := global.DB.Model(&model.{{.StructName}}{}).Order("id DESC")
 	{{- if or .FieldsMap.office_id -}}
-    loginInfo := GetLoginInfo(c)
 	// 非超级管理员 && 数据权限验证
+    var loginInfo = GetLoginInfo(c)
 	if !loginInfo.IsSuperAdmin {
         if loginInfo.IsAdmin {
             {{- if .FieldsMap.relation_ids -}}
