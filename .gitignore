@@ -33,3 +33,5 @@ template/manage/yarn-debug.log*
 template/manage/yarn-error.log*
 
 template/manage/package-lock.json
+template/frontend/d2admin/node_modules
+template/frontend/d2admin/.idea
