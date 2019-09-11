@@ -212,7 +212,7 @@ func parseFunc(vfunc, key, alias string) (v ValidFunc, err error) {
 	if err != nil {
 		return
 	}
-	tParams= append(tParams, alias)
+	tParams = append(tParams, alias)
 	v = ValidFunc{name, tParams}
 	return
 }

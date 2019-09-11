@@ -13,17 +13,17 @@ import (
 // 各个函数的结果的 key 值为字段名.验证函数名
 type user struct {
 	Id     int
-	Name   string `valid:"Required;Match(/^Bee.*/)" validAlias:"姓名"` // Name 不能为空并且以 Bee 开头
-	Age    int    `valid:"Range(1, 140); Min(20)"`                   // 1 <= Age <= 140，超出此范围即为不合法
-	Email  string `valid:"Email; MaxSize(100)"`                      // Email 字段需要符合邮箱格式，并且最大长度不能大于 100 个字符
-	Mobile string `valid:"Mobile"`                                   // Mobile 必须为正确的手机号
-	IP     string `valid:"IP"`                                       // IP 必须为一个正确的 IPv4 地址
+	Name   string      `valid:"Required;Match(/^Bee.*/)" validAlias:"姓名"` // Name 不能为空并且以 Bee 开头
+	Age    null.Int    `valid:"Range(1, 140); Min(20)"`                   // 1 <= Age <= 140，超出此范围即为不合法
+	Email  null.String `valid:"MaxSize(100);Email"`                       // Email 字段需要符合邮箱格式，并且最大长度不能大于 100 个字符
+	Mobile string      `valid:"Mobile"`                                   // Mobile 必须为正确的手机号
+	IP     string      `valid:"IP"`                                       // IP 必须为一个正确的 IPv4 地址
 }
 
 type Product struct {
 	Id      int
 	Desc    string   `valid:"Required;" validAlias:"备注"` // Name 不能为空并且以 Bee 开头
-	Tel     string   `valid:"Mobile"`                    // Mobile 必须为正确的手机号
+	Tel     string   `valid:"MaxSize(100);Mobile"`       // Mobile 必须为正确的手机号
 	Address string   `valid:"IP;MinSize(20)"`            // IP 必须为一个正确的 IPv4 地址
 	Content null.Int `valid:"Min(2)"`                    // IP 必须为一个正确的 IPv4 地址
 }
@@ -38,7 +38,7 @@ func (u *user) Valid(v *Validation) {
 }
 
 func TestPointer2(t *testing.T) {
-	u := user{}
+	u := user{Age: null.NewInt(0, false), Email: null.NewString("1894894@qq.com", true)}
 	errs := Valid(&u)
 	if len(errs) > 0 {
 		t.Error(errs)
@@ -52,19 +52,4 @@ func TestPointer2(t *testing.T) {
 	} else {
 		t.Log("ok")
 	}
-}
-
-func Valid(st interface{}) (errs []string) {
-	Validate := Validation{}
-	flag, err := Validate.Valid(st)
-	if err != nil {
-		println(err)
-		return append(errs, err.Error())
-	}
-	if !flag {
-		for _, err := range Validate.Errors {
-			errs = append(errs, err.ZhName+err.Message)
-		}
-	}
-	return
 }

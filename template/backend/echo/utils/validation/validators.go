@@ -553,7 +553,21 @@ type Match struct {
 
 // IsSatisfied judge whether obj is valid
 func (m Match) IsSatisfied(obj interface{}) bool {
-	return m.Regexp.MatchString(fmt.Sprintf("%v", obj))
+	var v interface{}
+	v = obj
+	if i, ok := obj.(null.Int); ok {
+		v = i.Int64
+	}
+	if t, ok := obj.(null.Time); ok {
+		v = t.Time
+	}
+	if b, ok := obj.(null.Bool); ok {
+		v = b.Bool
+	}
+	if str, ok := obj.(null.String); ok {
+		v = str.String
+	}
+	return m.Regexp.MatchString(fmt.Sprintf("%v", v))
 }
 
 // DefaultMessage return the default Match error message
@@ -690,7 +704,7 @@ func (b Base64) GetLimitValue() interface{} {
 }
 
 // just for chinese mobile phone number
-var mobilePattern = regexp.MustCompile(`^((\+86)|(86))?(1(([35][0-9])|[8][0-9]|[7][01356789]|[4][579]))\d{8}$`)
+var mobilePattern = regexp.MustCompile(`^\d{11}$`)
 
 // Mobile check struct
 type Mobile struct {

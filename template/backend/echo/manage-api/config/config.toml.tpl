@@ -42,7 +42,7 @@ addr = "{{.rdHost}}:{{.rdPort}}"
 # 密码
 password = "{{.rdPassword}}"
 # 数据库
-database = 0
+database = {{.rdDatabase}}
 # 最大连接数
 maxOpenConns = 10
 # 最大空闲连接数

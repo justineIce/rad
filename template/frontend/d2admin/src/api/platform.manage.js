@@ -1,54 +1,55 @@
 import request from '@/plugin/axios'
 
-// 管理平台 - 获取顶级菜单
-export function GetTopMenuList(data) {
-    return request({
-        url: '/platformManage/resource/menu/top/list',
-        method: 'post',
-        data
-    })
-}
-
 // 管理平台 - 添加/修改顶级菜单
-export function AddTopLevelMenu(data) {
+export function SaveMenu (data) {
     return request({
-        url: '/platformManage/resource/menu/add',
+        url: '/auth/sys_menu/save',
         method: 'post',
         data
     })
 }
 
 // 管理平台 - 删除顶级菜单
-export function DelTopLevelMenu(data) {
+export function DelMenu (data) {
     return request({
-        url: '/platformManage/resource/menu/del',
+        url: '/auth/sys_menu/del',
         method: 'post',
         data
     })
 }
 
-// 管理平台 - 获取所有菜单
-export function GetAllMenuList(data) {
+
+// 管理平台 - 获取菜单按钮
+export function GetBtnMenuList (data) {
     return request({
-        url: '/platformManage/resource/menu/all/list',
+        url: '/auth/sys_menu_btn/all',
         method: 'post',
         data
     })
 }
 
-// 管理平台 - 根据菜单id获取按钮操作权限
-export function GetBtnMenuList(data) {
+// 管理平台 - 保存菜单按钮
+export function SaveMenuBtn (data) {
     return request({
-        url: '/platformManage/resource/menu/btn/list',
+        url: '/auth/sys_menu_btn/save',
+        method: 'post',
+        data
+    })
+}
+
+// 管理平台 - 删除菜单按钮
+export function DelMenuBtn (data) {
+    return request({
+        url: '/auth/sys_menu_btn/del',
         method: 'post',
         data
     })
 }
 
 // 获取所有的菜单列表
-export function GetMenuList(data) {
+export function GetMenuList (data) {
     return request({
-        url: '/platformManage/resource/menu/list',
+        url: '/auth/sys_menu/all',
         method: 'post',
         data
     })
@@ -57,7 +58,7 @@ export function GetMenuList(data) {
 /* -----------角色管理------------- */
 
 // 获取角色列表
-export function GetRoleList(data) {
+export function GetRoleList (data) {
     return request({
         url: '/auth/sys_role/all',
         method: 'post',
@@ -66,34 +67,42 @@ export function GetRoleList(data) {
 }
 
 // 添加角色
-export function AddRole(data) {
+export function AddRole (data) {
     return request({
-        url: '/platformManage/role/add',
+        url: '/auth/sys_role/save',
         method: 'post',
         data
     })
 }
 
 // 删除角色
-export function DelRole(data) {
+export function DelRole (data) {
     return request({
-        url: '/platformManage/role/del',
+        url: '/auth/sys_role/del',
         method: 'post',
         data
     })
 }
 
-// 删除角色
-export function GetCheckedMenuBtnLimit(data) {
+// 根据角色获取菜单资源
+export function GetCheckedMenuLimit (data) {
     return request({
-        url: '/platformManage/role/resource/v/list',
+        url: '/auth/sys_role_menu/all',
+        method: 'post',
+        data
+    })
+}
+// 根据角色获取菜单资源按钮
+export function GetCheckedMenuBtnLimit (data) {
+    return request({
+        url: '/auth/sys_role_menu_btn/all',
         method: 'post',
         data
     })
 }
 
 // 操作角色资源关系表
-export function AddRoleResource(data) {
+export function AddRoleResource (data) {
     return request({
         url: '/platformManage/role/resource/add',
         method: 'post',
@@ -113,7 +122,7 @@ export function AddSystemManage (data) {
 }
 
 // 获取用户列表
-export function GetAuthorityList(data) {
+export function GetAuthorityList (data) {
     return request({
         url: '/auth/sys_user/page',
         method: 'post',
@@ -122,56 +131,61 @@ export function GetAuthorityList(data) {
 }
 
 // 获取用户列表
-export function DelSystemManage(data) {
+export function DelSystemManage (data) {
     return request({
-        url: '/platformManage/system/manage/del',
+        url: '/auth/sys_user/del',
         method: 'post',
         data
     })
 }
 
 // 重置密码
-export function ResetPassword(data) {
+export function ResetPassword (data) {
     return request({
-        url: '/platformManage/system/manage/password/reset',
+        url: '/auth/sys_user/pwd/reset',
         method: 'post',
         data
     })
 }
 
-// 根据多个菜单id获取其子按钮资源
-export function GetBtnMenuListByIds(data) {
+// 添加菜单权限
+export function UpdateRoleMenuByIds (data) {
     return request({
-        url: '/platformManage/resource/menu/btn/list/by/ids',
+        url: '/auth/sys_role_menu/save',
+        method: 'post',
+        data
+    })
+}
+// 添加菜单按钮权限
+export function UpdateRoleMenuBtnById (data) {
+    return request({
+        url: '/auth/sys_role_menu_btn/save',
         method: 'post',
         data
     })
 }
 
-/* ------------------白名单管理----------------- */
+/* ------------------部门管理----------------- */
 
-// 获取白名单列表
-export function GetIpList(data) {
+export function SaveSysOffice (data) {
     return request({
-        url: '/platformManage/ip/list',
+        url: '/auth/sys_office/save',
         method: 'post',
         data
     })
 }
 
-// 添加白名单
-export function AddIp(data) {
+export function GetSysOfficeAll (data) {
     return request({
-        url: '/platformManage/ip/add',
+        url: '/auth/sys_office/all',
         method: 'post',
         data
     })
 }
 
-// 删除白名单
-export function DelIp(data) {
+export function DelSysOffice (data) {
     return request({
-        url: '/platformManage/ip/del',
+        url: '/auth/sys_office/del',
         method: 'post',
         data
     })
@@ -180,9 +194,20 @@ export function DelIp(data) {
 /* ------------操作日志---------------- */
 
 // 获取操作列表
-export function GetManageActionLog(data) {
+export function GetManageActionLog (data) {
     return request({
-        url: '/platformManage/system/manage/action/log/list',
+        url: '/auth/sys_log/page',
+        method: 'post',
+        data
+    })
+}
+
+/* ------------登陆者权限---------------- */
+
+// 登录的菜单资源
+export function GetLoginMenu (data) {
+    return request({
+        url: '/auth/login/menu',
         method: 'post',
         data
     })

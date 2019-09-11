@@ -66,12 +66,12 @@ func UploadFile(c echo.Context) error {
 	path = fmt.Sprintf("/%s", path)
 	go func() {
 		err = global.DB.Create(&model.FileLog{
-			ID:        utils.IDString(),
-			Name:      file.Filename,
-			Path:      path,
-			Size:      file.Size,
-			Ext:       ext,
-			IP:        c.RealIP(),
+			ID:   utils.IDString(),
+			Name: file.Filename,
+			Path: path,
+			Size: file.Size,
+			Ext:  ext,
+			//IP:        c.RealIP(),
 			CreatedBy: loginInfo.ID,
 		}).Error
 		if err != nil {
@@ -87,7 +87,7 @@ func UploadFile(c echo.Context) error {
 		"ext":  ext,
 	})
 }
-func GetPath(auth, dir, fileName, suffix string, loginInfo model.SysUserLoginInfo) string {
+func GetPath(auth, dir, fileName, suffix string, loginInfo *model.SysUserLoginInfo) string {
 	if dir == "" {
 		dir = "file"
 	}

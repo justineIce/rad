@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type CustomBinder struct{}
@@ -197,47 +198,47 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 			}
 			break
 		case "null.Int":
-			return setIntField(val, 64, structField)
-			intVal, err := strconv.ParseInt(val, 10, 64)
-			if err != nil {
-				return err
-			}
 			if val != "" {
+				intVal, err := strconv.ParseInt(val, 10, 64)
+				if err != nil {
+					return err
+				}
 				structField.Set(reflect.ValueOf(null.NewInt(intVal, true)))
 			} else {
-				structField.Set(reflect.ValueOf(null.NewInt(intVal, false)))
+				structField.Set(reflect.ValueOf(null.NewInt(0, false)))
 			}
 			break
 		case "null.Bool":
-			b, err := strconv.ParseBool(val)
-			if err != nil {
-				return err
-			}
 			if val != "" {
+				b, err := strconv.ParseBool(val)
+				if err != nil {
+					return err
+				}
 				structField.Set(reflect.ValueOf(null.NewBool(b, true)))
 			} else {
-				structField.Set(reflect.ValueOf(null.NewBool(b, false)))
+				structField.Set(reflect.ValueOf(null.NewBool(false, false)))
 			}
 			break
 		case "null.Float":
-			floatVal, err := strconv.ParseFloat(val, 64)
-			if err != nil {
-				return err
-			}
 			if val != "" {
-				structField.Set(reflect.ValueOf(null.NewFloat(floatVal, false)))
+				floatVal, err := strconv.ParseFloat(val, 64)
+				if err != nil {
+					return err
+				}
+				structField.Set(reflect.ValueOf(null.NewFloat(floatVal, true)))
 			} else {
-				structField.Set(reflect.ValueOf(null.NewFloat(floatVal, false)))
+				structField.Set(reflect.ValueOf(null.NewFloat(0, false)))
 			}
 			break
 		case "null.Time":
-			t, err := dateparse.ParseAny(val)
-			if err != nil {
-				return err
-			}
 			if val != "" {
+				t, err := dateparse.ParseAny(val)
+				if err != nil {
+					return err
+				}
 				structField.Set(reflect.ValueOf(null.NewTime(t, true)))
 			} else {
+				var t time.Time
 				structField.Set(reflect.ValueOf(null.NewTime(t, false)))
 			}
 			break

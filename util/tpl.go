@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/jinzhu/inflection"
 	"github.com/serenize/snaker"
 	"go/format"
@@ -50,6 +51,11 @@ func ExecuteTemplate(t *template.Template, path string, m interface{}) {
 }
 
 func ExecuteTemplateBase(t *template.Template, path string, m interface{}, before func([]byte) []byte) {
+	defer func() {
+		if err := recover(); err != nil {
+			println(fmt.Sprintf("path：%s，ExecuteTemplateBase：%v", path, err))
+		}
+	}()
 	//判断是否存在文件
 	flag, _ := PathExists(path)
 	if !flag {

@@ -1,5 +1,5 @@
 import util from '@/libs/util.js'
-import { AccountLogin } from '@api/sys.login'
+import { AccountLogin,AccountLogOut } from '@api/sys.login'
 
 export default {
   namespaced: true,
@@ -33,8 +33,8 @@ export default {
             // 如有必要 token 需要定时更新，默认保存一天
             if (res) {
               res = res.data
-              util.cookies.set('uuid', res.ID)
-              util.cookies.set('token', res.Token)
+              util.cookies.set('uuid', res.ID, {expires: 0.083})
+              util.cookies.set('token', res.Token, {expires: 0.083})
               // 设置 vuex 用户信息
               await dispatch('d2admin/user/set', {
                   name: res.Name
@@ -62,16 +62,28 @@ export default {
        * @description 注销
        */
       async function logout () {
-        // 删除cookie
-        util.cookies.remove('token')
-        util.cookies.remove('uuid')
-        // 清空 vuex 用户信息
-        await dispatch('d2admin/user/set', {}, { root: true })
-        // 跳转路由
-        vm.$router.push({
-          name: 'login'
-        })
+          AccountLogOut().then(async res => {
+              logoutClear()
+          }).catch(err => {
+              logoutClear();
+          })
       }
+      /**
+       * @description 注销
+       */
+      async function logoutClear () {
+          // 删除cookie
+          util.cookies.remove('token')
+          util.cookies.remove('uuid')
+
+          // 清空 vuex 用户信息
+          await dispatch('d2admin/user/set', {}, { root: true })
+          // 跳转路由
+          vm.$router.push({
+              name: 'login'
+          })
+      }
+
       // 判断是否需要确认
       if (confirm) {
         commit('d2admin/gray/set', true, { root: true })

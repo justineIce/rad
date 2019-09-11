@@ -31,8 +31,6 @@ func VerificationCode(c echo.Context) error {
 	_, _ = pic.NewImage(d, 100, 40).WriteTo(c.Response().Writer)
 	c.Response().Flush()
 	c.Set("Content-Type", "image/png")
-
-	//c.Stream(http.StatusOK,"image/png", bytes.NewReader(d) )
 	return nil
 }
 
@@ -57,6 +55,15 @@ func Login(c echo.Context) error {
 		}
 	}
 	global.Session(c).AddValue(global.VerificationNum, convert.ToString(errCount+1)).Saves()*/
+	var imgCode string
+	imgCode = c.FormValue("code")
+	if imgCode == "" {
+		return utils.ImgCodeNUll(c)
+	}
+	//判断图片验证码是否正确
+	if imgCode != global.Session(c).GetValue(global.VerificationCode) {
+		return utils.ImgCodeFail(c)
+	}
 
 	//账号验证
 	userName := c.FormValue("username")
@@ -74,18 +81,32 @@ func Login(c echo.Context) error {
 		return utils.ErrorNull(c, "密码格式错误")
 	}
 	var vSysUser model.VSysUser
-	if err := global.DB.First(&vSysUser, "username=?", userName).Error; err != nil && err != gorm.ErrRecordNotFound {
+	if err := global.DB.First(&vSysUser, "(username=? OR mobile=?)", userName, userName).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return utils.ErrorNull(c, "登录账号不存在")
+		}
 		global.Log.Error("query sys_user error： %s", err.Error())
 		return utils.ErrorNull(c, "登陆失败")
 	}
+	// 日志记录准备
+	c.Set("loginID", vSysUser.ID)
+	c.Set("CompanyID", vSysUser.CompanyID)
 	if encrypt.Sha1Encode(password+vSysUser.Salt) != vSysUser.Password {
 		return utils.ErrorNull(c, "帐号或密码错误")
+	}
+	if vSysUser.LoginFlag == enum.LoginFlag {
+		return utils.ErrorNull(c, "无登录权限，请联系管理员授权！")
 	}
 	_, sysToken, err := LoginLib(vSysUser)
 	if err != nil {
 		return utils.ErrorNull(c, err.Error())
 	}
-	return utils.Success(c, "操作成功", sysToken)
+	return utils.Success(c, "操作成功", map[string]interface{}{
+		"Token":       sysToken.Token,
+		"TokenExpire": sysToken.TokenExpire,
+		"ID":          vSysUser.ID,
+		"Name":        vSysUser.Name,
+	})
 }
 
 //公共登录方法
@@ -112,18 +133,20 @@ func LoginLib(vSysUser model.VSysUser) (loginInfo model.SysUserLoginInfo, sysTok
 		}
 	}
 	//获取用户角色菜单
-	var vSysRoleMenu []model.VSysRoleMenu
+	var sysMenu []model.SysMenu
 	if len(roleIds) > 0 {
-		if err = global.DB.Where("sys_role_id in (?)", roleIds).Group("id").Find(&vSysRoleMenu).Error; err != nil {
+		if err = global.DB.Where("id in (SELECT id FROM `v_sys_role_menu` WHERE sys_role_id in (?) GROUP BY id)", roleIds).
+			Group("id").Find(&sysMenu).Error; err != nil {
 			global.Log.Error("query v_sys_role_menu error： %s", err.Error())
 			err = errors.New("登录失败")
 			return
 		}
 	}
 	//获取用户角色菜单按钮
-	var vSysRoleMenuBtn []model.VSysRoleMenuBtn
+	var sysMenuBtn []model.SysMenuBtn
 	if len(roleIds) > 0 {
-		if err = global.DB.Where("sys_role_id in (?)", roleIds).Group("id").Find(&vSysRoleMenuBtn).Error; err != nil {
+		if err = global.DB.Where("id in (SELECT id FROM `v_sys_role_menu_btn` WHERE sys_role_id in (?) GROUP BY id)", roleIds).
+			Group("id").Find(&sysMenuBtn).Error; err != nil {
 			global.Log.Error("query v_sys_role_menu_btn error： %s", err.Error())
 			err = errors.New("登录失败")
 			return
@@ -131,7 +154,7 @@ func LoginLib(vSysUser model.VSysUser) (loginInfo model.SysUserLoginInfo, sysTok
 	}
 
 	//登录信息
-	loginInfo = model.GetLoginInfo(vSysUser, vSysUserRole, vSysRoleMenu, vSysRoleMenuBtn)
+	loginInfo = model.GetLoginInfo(vSysUser, vSysUserRole, sysMenu, sysMenuBtn)
 
 	// Generate encoded token and send it as response.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, loginInfo.GetLoginToken())
@@ -180,6 +203,9 @@ func LogOut(c echo.Context) error {
 	if err != nil {
 		return utils.SuccessNull(c, "已安全退出")
 	}
+	// 日志记录准备
+	c.Set("loginID", loginInfo.ID)
+	c.Set("CompanyID", loginInfo.CompanyId)
 	sysUserFlag := GetSysUserLoginFlag(loginInfo.ID)
 	_, err = global.RD.DelKey(sysUserFlag)
 	if err != nil {

@@ -6,7 +6,11 @@
       <d2-icon-svg v-if="menu.iconSvg" :name="menu.iconSvg"/>
       <span slot="title">{{menu.title}}</span>
     </template>
-    <template v-for="(child, childIndex) in menu.children" v-if="!rootMenu.collapse">
+    <!--<template v-for="(child, childIndex) in menu.children" v-if="!rootMenu.collapse">-->
+    <!--<d2-layout-header-aside-menu-item v-if="child.children === undefined" :menu="child" :key="childIndex"/>-->
+    <!--<d2-layout-header-aside-menu-sub v-else :menu="child" :key="childIndex"/>-->
+    <!--</template>-->
+    <template v-for="(child, childIndex) in menu.children">
       <d2-layout-header-aside-menu-item v-if="child.children === undefined" :menu="child" :key="childIndex"/>
       <d2-layout-header-aside-menu-sub v-else :menu="child" :key="childIndex"/>
     </template>
@@ -14,29 +18,29 @@
 </template>
 
 <script>
-import { uniqueId } from 'lodash'
-// 组件
-import d2LayoutMainMenuItem from '../menu-item'
+    import { uniqueId } from 'lodash'
+    // 组件
+    import d2LayoutMainMenuItem from '../menu-item'
 
-export default {
-  name: 'd2-layout-header-aside-menu-sub',
-  components: {
-    'd2-layout-header-aside-menu-item': d2LayoutMainMenuItem
-  },
-  props: {
-    menu: {
-      type: Object,
-      required: false,
-      default: () => {}
+    export default {
+        name: 'd2-layout-header-aside-menu-sub',
+        components: {
+            'd2-layout-header-aside-menu-item': d2LayoutMainMenuItem
+        },
+        props: {
+            menu: {
+                type: Object,
+                required: false,
+                default: () => {}
+            }
+        },
+        inject: ['rootMenu'],
+        data () {
+            return {
+                uniqueId: uniqueId('d2-menu-empty-')
+            }
+        },
+        mounted () {
+        }
     }
-  },
-  inject: ['rootMenu'],
-  data () {
-    return {
-      uniqueId: uniqueId('d2-menu-empty-')
-    }
-  },
-  mounted () {
-  }
-}
 </script>

@@ -1,4 +1,3 @@
-import platformManage from './modules/platform-manage'
 import router from './modules/router'
 import layoutHeaderAside from '@/layout/header-aside'
 
@@ -46,8 +45,7 @@ const frameIn = [
       }
     ]
   },
-  platformManage,
-    router
+  router
 ]
 
 /**
@@ -65,14 +63,14 @@ const frameOut = [
 /**
  * 错误页面
  */
-const errorPage = [
+/*const errorPage = [
   // 404
   {
     path: '*',
     name: '404',
     component: () => import('@/pages/error-page-404')
   }
-]
+]*/
 
 // 导出需要显示菜单的
 export const frameInRoutes = frameIn
@@ -81,5 +79,5 @@ export const frameInRoutes = frameIn
 export default [
   ...frameIn,
   ...frameOut,
-  ...errorPage
+  //...errorPage
 ]

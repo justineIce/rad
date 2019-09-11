@@ -22,8 +22,8 @@ type SysUserLoginInfo struct {
 	OfficeRelationIds string               //组织关系
 	UserType          string               //账号类型
 	SysRoles          []VSysUserRole       //角色，支持多角色
-	SysMenu           []VSysRoleMenu       //菜单
-	SysMenuBtns       []VSysRoleMenuBtn    //菜单按钮权限
+	SysMenu           []SysMenu            //菜单
+	SysMenuBtns       []SysMenuBtn         //菜单按钮权限
 	IsSuperAdmin      bool                 //是否为超级管理员
 	IsAdmin           bool                 //是否管理员
 	PathAuth          map[string]time.Time //url已通过的鉴权
@@ -44,7 +44,7 @@ type SysToken struct {
 
 //菜单树
 type SysMenuTree struct {
-	VSysRoleMenu
+	SysMenu
 	Children []SysMenuTree
 }
 
@@ -77,7 +77,7 @@ func IsAdmin(roles []VSysUserRole) bool {
 }
 
 //登录信息
-func GetLoginInfo(vSysUser VSysUser, roles []VSysUserRole, menus []VSysRoleMenu, menuBtns []VSysRoleMenuBtn) SysUserLoginInfo {
+func GetLoginInfo(vSysUser VSysUser, roles []VSysUserRole, menus []SysMenu, menuBtns []SysMenuBtn) SysUserLoginInfo {
 	return SysUserLoginInfo{
 		ID:                vSysUser.ID,
 		Name:              vSysUser.Name,
@@ -95,7 +95,7 @@ func GetLoginInfo(vSysUser VSysUser, roles []VSysUserRole, menus []VSysRoleMenu,
 }
 
 //获取树形菜单
-func GetSysMenuTree(menus []VSysRoleMenu, parentId string) []SysMenuTree {
+func GetSysMenuTree(menus []SysMenu, parentId string) []SysMenuTree {
 	var smuts = make([]SysMenuTree, 0)
 	var smut SysMenuTree
 	for i := 0; i < len(menus); i++ {
@@ -108,12 +108,40 @@ func GetSysMenuTree(menus []VSysRoleMenu, parentId string) []SysMenuTree {
 		smut.Name = menus[i].Name
 		smut.Href = menus[i].Href
 		smut.Icon = menus[i].Icon
-		smut.IsShow = menus[i].IsShow
-		smut.Permission = menus[i].Permission
+		smut.Sort = menus[i].Sort
+		smut.RouteName = menus[i].RouteName
 		smut.RelationIds = menus[i].RelationIds
 		smut.Remarks = menus[i].Remarks
 		smut.Target = menus[i].Target
 		smut.Children = GetSysMenuTree(menus, menus[i].ID)
+		smuts = append(smuts, smut)
+	}
+	return smuts
+}
+
+//部门树
+type SysOfficeTree struct {
+	SysOffice
+	Children []SysOfficeTree
+}
+
+//获取树形菜单
+func GetSysOfficeTree(menus []SysOffice, parentId string) []SysOfficeTree {
+	var smuts = make([]SysOfficeTree, 0)
+	var smut SysOfficeTree
+	for i := 0; i < len(menus); i++ {
+		if menus[i].ParentID != parentId {
+			continue
+		}
+		smut = SysOfficeTree{}
+		smut.ID = menus[i].ID
+		smut.SysCompanyID = menus[i].SysCompanyID
+		smut.ParentID = menus[i].ParentID
+		smut.RelationIds = menus[i].RelationIds
+		smut.Name = menus[i].Name
+		smut.Sort = menus[i].Sort
+		smut.Remarks = menus[i].Remarks
+		smut.Children = GetSysOfficeTree(menus, menus[i].ID)
 		smuts = append(smuts, smut)
 	}
 	return smuts

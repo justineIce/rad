@@ -1,11 +1,14 @@
 package global
 
 import (
+	"errors"
+	"fmt"
 	"github.com/astaxie/beego/logs"
 	"{{.PackageName}}/utils/config"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
 )
+
 var (
 	//DB 数据库操作
 	DB *gorm.DB
@@ -29,19 +32,25 @@ type ConfPath struct {
 }
 
 //InitGlobal 初始化各项配置
-func InitGlobal(confPath *ConfPath) {
-	var err error
+func InitGlobal(confPath *ConfPath) (err error) {
 	// 初始化配置文件
 	Conf, err = config.LoadGlobalConfig(confPath.ConfigPath)
 	if err != nil {
-		panic(err)
+		err = errors.New(fmt.Sprintf("初始化toml配置文件失败，error：%s", err.Error()))
+		return
 	}
 	//初始化数据库连接
 	DB, err = config.NewGorm(Conf)
 	if err != nil {
-		panic(err)
+		err = errors.New(fmt.Sprintf("初始化数据库失败，error：%s", err.Error()))
+		return
 	}
 	//初始化redis
-	RD = config.InitRedis(Conf.Redis)
+	RD, err = config.InitRedis(Conf.Redis, "rad-d2")
+	if err != nil {
+		err = errors.New(fmt.Sprintf("初始化Redis数据库失败，error：%s", err.Error()))
+		return
+	}
 	Log = config.InitLog(Conf.Log)
+	return
 }

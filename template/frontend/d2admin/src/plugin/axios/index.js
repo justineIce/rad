@@ -2,7 +2,7 @@ import vm from '@/main'
 import store from '@/store'
 import axios from 'axios'
 import qs from 'qs'
-import {Message} from 'element-ui'
+import {Notification,Message} from 'element-ui'
 import util from '@/libs/util'
 
 // 创建一个错误
@@ -91,11 +91,16 @@ service.interceptors.response.use(
                     })
                     return null
                 case 402:
-                    Message({
-                        message: data.join(','),
+                    let errs=new Array()
+                    for (let i = 0; i < data.length; i++) {
+                        errs.push(`<p>${i+1}、${data[i]}</p>`)
+                    }
+                    Notification({
+                        title: '字段校验提示',
                         type: 'warning',
-                        duration: 2000
-                    })
+                        dangerouslyUseHTMLString: true,
+                        message: errs.join('')
+                    });
                     return null
                 default:
                     Message({

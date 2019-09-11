@@ -8,6 +8,7 @@ export default {
     header: [],
     // 侧栏菜单
     aside: [],
+    fullAside: [],
     // 侧边栏收缩
     asideCollapse: setting.menu.asideCollapse
   },
@@ -87,6 +88,11 @@ export default {
     asideSet (state, menu) {
       // store 赋值
       state.aside = menu
+    },
+    fullAsideSet(state, menu) {
+        // store 赋值
+        state.fullAside = menu
+        state.aside = menu
     }
   }
 }

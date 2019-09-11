@@ -15,22 +15,23 @@ import (
 )
 
 const (
-	//授权过期时间 24 小时
-	AuthExpireTime     int64 = 2 * 60 * 60
+	//授权过期时间 2 小时
+	AuthExpireTime int64 = 2*60*60 + 10
+	//资源路径缓存10分钟
 	PathAuthExpireTime int64 = 10 * 60
-	//登录地址
-	RedirectUrl = "/login"
 	//登录失效提示
 	AuthInvalidMsg = "未登录或登陆已失效"
 	//登录失败提示
-	AuthErrorMsg          = "登陆失败，请重新登陆"
 	AuthLoginInfoErrorMsg = "获取登录信息失败"
 	//登录cookie名称
-	TokenName = "{{.ProjectName}}_token"
+	TokenName = "rad-d2_token"
+	//资源缓存标记
+	cacheResourceAllFlag = "cacheResourceAllFlag"
+	//登录信息缓存标记
+	loginInfoName = "rad-d2_loginInfo"
 )
 
-const loginInfoName = "{{.ProjectName}}_loginInfo"
-
+// Filter 路由拦截器
 func Filter(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		token, err := GetToken(c)
@@ -68,7 +69,7 @@ func Filter(next echo.HandlerFunc) echo.HandlerFunc {
 		if !loginInfo.IsSuperAdmin {
 			if v, ok := loginInfo.PathAuth[path+method]; ok && v.After(time.Now()) {
 				//未过期
-				println("鉴权未过期")
+				global.Log.Info("鉴权未过期")
 			} else {
 				//获取所有鉴权列表，判断当前请求是否需要权限判定
 				resourceAll, err := GetResourceAll()
@@ -83,13 +84,13 @@ func Filter(next echo.HandlerFunc) echo.HandlerFunc {
 				loginInfo.PathAuth[path+method] = time.Now().Add(10 * time.Minute)
 			}
 		}
-		c.Set(loginInfoName, loginInfo)
+		c.Set(loginInfoName, &loginInfo)
 		return next(c)
 	}
 }
 
+// GetResourceAll 获取所有资源
 func GetResourceAll() (btns []model.SysMenuBtn, err error) {
-	cacheResourceAllFlag := "cacheResourceAllFlag"
 	cache, _ := global.RD.GetString(cacheResourceAllFlag)
 	if cache == "" {
 		if err = global.DB.Find(&btns).Error; err != nil {
@@ -103,7 +104,16 @@ func GetResourceAll() (btns []model.SysMenuBtn, err error) {
 	return
 }
 
-//判断请求的Url是否在鉴权范围内
+// ClearResourceAll 清除资源
+func ClearResourceAll() (err error) {
+	_, err = global.RD.DelKey(cacheResourceAllFlag)
+	if err != nil {
+		global.Log.Error("redis DelKey CacheResourceAll error： %s", err.Error())
+	}
+	return
+}
+
+// checkResourceAllPath 判断请求的Url是否在鉴权范围内
 func checkResourceAllPath(btns []model.SysMenuBtn, method string, path string) (flag bool) {
 	for _, v := range btns {
 		if strings.ToLower(v.Path) == strings.ToLower(path) && strings.ToLower(v.Method) == strings.ToLower(method) {
@@ -114,8 +124,8 @@ func checkResourceAllPath(btns []model.SysMenuBtn, method string, path string) (
 	return
 }
 
-//判断用户的所有权限是否包含当前的请求Url
-func checkResourcePath(btns []model.VSysRoleMenuBtn, method string, path string) (flag bool) {
+// checkResourcePath 判断用户的所有权限是否包含当前的请求Url
+func checkResourcePath(btns []model.SysMenuBtn, method string, path string) (flag bool) {
 	for _, v := range btns {
 		if strings.ToLower(v.Path) == strings.ToLower(path) && strings.ToLower(v.Method) == strings.ToLower(method) {
 			//在鉴权范围内
@@ -125,17 +135,21 @@ func checkResourcePath(btns []model.VSysRoleMenuBtn, method string, path string)
 	return
 }
 
-// 登录信息
-func GetLoginInfo(c echo.Context) model.SysUserLoginInfo {
-	return c.Get(loginInfoName).(model.SysUserLoginInfo)
+// GetLoginInfo 登录信息
+func GetLoginInfo(c echo.Context) *model.SysUserLoginInfo {
+	loginInfo := c.Get(loginInfoName)
+	if loginInfo == nil {
+		return nil
+	}
+	return loginInfo.(*model.SysUserLoginInfo)
 }
 
-// 单点登录的唯一标记格式
+// GetSysUserLoginFlag 单点登录的唯一标记格式
 func GetSysUserLoginFlag(id string) string {
 	return fmt.Sprintf("sys_user_login_token_%s", id)
 }
 
-// 检查token有效性
+// GetToken 检查token有效性
 func GetToken(c echo.Context) (tokenStr string, err error) {
 	//auth
 	tokenStr = c.Request().Header.Get("Access-Token")
@@ -155,7 +169,7 @@ func GetToken(c echo.Context) (tokenStr string, err error) {
 	return
 }
 
-// 根据token获取Redis中的数据
+// GetSysUserLoginInfo 根据token获取Redis中的数据
 //  tokenString：token参数
 func GetSysUserLoginInfo(tokenStr string) (loginInfo model.SysUserLoginInfo, err error) {
 	tip := AuthInvalidMsg

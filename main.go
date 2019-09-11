@@ -21,9 +21,10 @@ var (
 	dbUser     = goopt.String([]string{"--dbUser"}, "root", "数据库的用户名，默认：root")
 	dbPassword = goopt.String([]string{"--dbPassword"}, "123456", "数据库的密码，默认：123456")
 
-	rdHost     = goopt.String([]string{"--rdHost"}, "127.0.0.1", "数据库主机地址，默认：127.0.0.1")
-	rdPort     = goopt.String([]string{"--rdPort"}, "6379", "数据库端口，默认：3306")
-	rdPassword = goopt.String([]string{"--rdPassword"}, "", "数据库的密码，默认：无")
+	rdHost     = goopt.String([]string{"--rdHost"}, "127.0.0.1", "Redis数据库主机地址，默认：127.0.0.1")
+	rdPort     = goopt.String([]string{"--rdPort"}, "6379", "Redis数据库端口，默认：3306")
+	rdPassword = goopt.String([]string{"--rdPassword"}, "", "Redis数据库的密码，默认：无")
+	rdDatabase = goopt.String([]string{"--rdDatabase"}, "", "Redis数据库名，默认：0")
 
 	dbName               = goopt.String([]string{"--dbName"}, "test", "数据库名称，默认：test")
 	dbParameters         = goopt.String([]string{"--dbParameters"}, "charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true", "数据库连接字符串，默认：charset=utf8mb4&parseTime=True&loc=Local&allowNativePasswords=true")
@@ -41,6 +42,21 @@ var (
 	targetPath           string //项目存放路径
 	DB                   *sql.DB
 )
+
+var tableWhiteList = map[string]string{
+	"file_log":          "",
+	"sys_company":       "",
+	"sys_dict":          "",
+	"sys_log":           "",
+	"sys_menu":          "",
+	"sys_menu_btn":      "",
+	"sys_office":        "",
+	"sys_role":          "",
+	"sys_role_menu":     "",
+	"sys_role_menu_btn": "",
+	"sys_user":          "",
+	"sys_user_role":     "",
+}
 
 func init() {
 	// Setup goopts
@@ -99,7 +115,7 @@ func main() {
 //生成前端框架
 func generateFrontend(curPath string) {
 	// 默认d2admin
-	_, err := util.Copy(fmt.Sprintf("%s/template/frontend/%s", curPath, *frontend), targetPath+"/manage", curPath+"/uncopy.txt")
+	_, err := util.Copy(fmt.Sprintf("%s/template/frontend/%s", curPath, *frontend), targetPath+"/manage-web", curPath+"/uncopy.txt")
 	if err != nil {
 		panic(err)
 	}
@@ -173,6 +189,7 @@ func executeBackendEcho(tables, views []string) {
 				"parameters": dbParameters,
 				"rdHost":     rdHost,
 				"rdPort":     rdPort,
+				"rdDatabase": rdDatabase,
 				"rdPassword": rdPassword,
 			},
 			AfterFunc: func(i []byte) []byte {
@@ -191,6 +208,16 @@ func executeBackendEcho(tables, views []string) {
 			Data:       tempData,
 		},
 		{
+			SourcePath: "template/backend/echo/manage-api/handle/file.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/file.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/file_log.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/file_log.go"),
+			Data:       tempData,
+		},
+		{
 			SourcePath: "template/backend/echo/manage-api/handle/filter.go.tpl",
 			TargetPath: getTargetPath("manage-api/handle/filter.go"),
 			Data:       tempData,
@@ -206,10 +233,122 @@ func executeBackendEcho(tables, views []string) {
 			Data:       tempData,
 		},
 		{
-			SourcePath: "template/backend/echo/manage-api/handle/file.go.tpl",
-			TargetPath: getTargetPath("manage-api/handle/file.go"),
+			SourcePath: "template/backend/echo/manage-api/handle/sys_company.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_company.go"),
 			Data:       tempData,
 		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_dict.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_dict.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_log.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_log.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_menu.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_menu.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_menu_btn.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_menu_btn.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_office.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_office.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_role.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_role.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_role_menu.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_role_menu.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_role_menu_btn.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_role_menu_btn.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_user.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_user.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/handle/sys_user_role.go.tpl",
+			TargetPath: getTargetPath("manage-api/handle/sys_user_role.go"),
+			Data:       tempData,
+		},
+
+		{
+			SourcePath: "template/backend/echo/manage-api/router/file_log.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/file_log.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_company.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_company.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_dict.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_dict.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_log.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_log.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_menu.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_menu.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_menu_btn.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_menu_btn.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_office.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_office.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_role.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_role.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_role_menu.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_role_menu.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_role_menu_btn.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_role_menu_btn.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_user.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_user.go"),
+			Data:       tempData,
+		},
+		{
+			SourcePath: "template/backend/echo/manage-api/router/sys_user_role.go.tpl",
+			TargetPath: getTargetPath("manage-api/router/sys_user_role.go"),
+			Data:       tempData,
+		},
+
 		{
 			SourcePath: "template/backend/echo/utils/filetype/filetype.go.tpl",
 			TargetPath: getTargetPath("utils/filetype/filetype.go"),
@@ -261,6 +400,10 @@ func executeBackendEcho(tables, views []string) {
 	}
 	//表
 	for _, tableName := range tables {
+		if _, ok := tableWhiteList[tableName]; ok {
+			continue
+		}
+
 		structName := dbmeta.FmtFieldName(tableName)
 		structName = inflection.Singular(structName)
 		structNames = append(structNames, structName)
@@ -308,7 +451,7 @@ func executeFrontendD2admim(tables, views []string) {
 	// pages 生成页面
 	page := util.GetTemplateByPath("template/frontend/d2admin/src/pages/page.vue.tpl")
 	// router 生成路由
-	router := util.GetTemplateByPath("template/frontend/d2admin/src/router/modules/router.js.tpl")
+	router := util.GetTemplateByPath("template/frontend/d2admin/src/routerMapComponents/index.js.tpl")
 	// menu 生成菜单
 	menu := util.GetTemplateByPath("template/frontend/d2admin/src/menu/aside.js.tpl")
 	var tableList []*dbmeta.ModelInfo
@@ -327,6 +470,9 @@ func executeFrontendD2admim(tables, views []string) {
 	}
 	//表
 	for _, tableName := range tables {
+		if _, ok := tableWhiteList[tableName]; ok {
+			continue
+		}
 		structName := dbmeta.FmtFieldName(tableName)
 		structName = inflection.Singular(structName)
 		modelInfo := dbmeta.GenerateStruct(DB, *dbName, tableName, structName, "model", *jsonAnnotation, *gormAnnotation, *gureguTypes)
@@ -335,25 +481,26 @@ func executeFrontendD2admim(tables, views []string) {
 			viewInfo = viewsMap[modelInfo.TableView]
 		}
 		//api生成
-		routerPath = fmt.Sprintf(getTargetPath("manage/src/api/%s.js"), modelInfo.TableName)
+		routerPath = fmt.Sprintf(getTargetPath("manage-web/src/api/%s.js"), modelInfo.TableName)
 		util.ExecuteTemplateBase(api, routerPath, map[string]interface{}{"modelInfo": modelInfo}, func(i []byte) []byte {
 			str := string(i)
 			return []byte(strings.ReplaceAll(str, "`", ""))
 		})
 		//page生成
-		pagePath = fmt.Sprintf(getTargetPath("manage/src/pages/%s.vue"), modelInfo.TableName)
+		pagePath = fmt.Sprintf(getTargetPath("manage-web/src/pages/%s.vue"), modelInfo.TableName)
 		util.ExecuteTemplate(page, pagePath, map[string]interface{}{"modelInfo": modelInfo, "ViewInfo": viewInfo})
 		// add router
 		tableList = append(tableList, modelInfo)
 	}
 
 	//main
-	util.ExecuteTemplateBase(router, getTargetPath("manage/src/router/modules/router.js"), map[string]interface{}{"tableList": tableList}, func(i []byte) []byte {
-		str := string(i)
-		return []byte(strings.ReplaceAll(strings.ReplaceAll(str, "`", ""), "&", "`"))
-	})
+	util.ExecuteTemplateBase(router, getTargetPath("manage-web/src/routerMapComponents/index.js"),
+		map[string]interface{}{"tableList": tableList}, func(i []byte) []byte {
+			str := string(i)
+			return []byte(strings.ReplaceAll(strings.ReplaceAll(str, "`", ""), "&", "`"))
+		})
 	//menu
-	util.ExecuteTemplateBase(menu, getTargetPath("manage/src/menu/aside.js"), map[string]interface{}{"tableList": tableList}, func(i []byte) []byte {
+	util.ExecuteTemplateBase(menu, getTargetPath("manage-web/src/menu/aside.js"), map[string]interface{}{"tableList": tableList}, func(i []byte) []byte {
 		str := string(i)
 		return []byte(strings.ReplaceAll(strings.ReplaceAll(str, "`", ""), "&", "`"))
 	})
