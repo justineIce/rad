@@ -1,4 +1,3 @@
-import router from './modules/router'
 import layoutHeaderAside from '@/layout/header-aside'
 
 /**
@@ -44,8 +43,7 @@ const frameIn = [
         }
       }
     ]
-  },
-  router
+  }
 ]
 
 /**

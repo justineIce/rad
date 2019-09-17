@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"errors"
+	"fmt"
+	"github.com/satori/go.uuid"
 	"math/big"
 	math "math/rand"
 	"reflect"
@@ -253,4 +255,12 @@ func StrToInt(str string) (i int) {
 		return 100
 	}
 	return
+}
+
+func IDString() string {
+	id, err := uuid.NewV4()
+	if err != nil {
+		panic(err)
+	}
+	return strings.Replace(fmt.Sprintf("%s", id), "-", "", -1)
 }

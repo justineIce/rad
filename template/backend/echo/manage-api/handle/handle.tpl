@@ -49,7 +49,7 @@ func Get{{.StructName}}All(c echo.Context) error {
 func Get{{.StructName}}Page(c echo.Context) error {
     {{- if not (eq .TableView "") -}}
     //视图查询
-    db := global.DB.Model(&model.{{.ViewInfo.StructName}}{}).Order("id DESC")
+    db := global.DB.Model(&model.{{.ViewInfo.StructName}}{}).Order("created_at DESC,id DESC")
     	{{if .ViewInfo.FieldsMap.office_id}}
     	// 非超级管理员 && 数据权限验证
         var loginInfo = GetLoginInfo(c)
@@ -92,7 +92,7 @@ func Get{{.StructName}}Page(c echo.Context) error {
     		Data:       list,
     	})
     {{else}}
-	db := global.DB.Model(&model.{{.StructName}}{}).Order("id DESC")
+	db := global.DB.Model(&model.{{.StructName}}{}).Order("created_at DESC,id DESC")
 	{{- if or .FieldsMap.office_id -}}
 	// 非超级管理员 && 数据权限验证
     var loginInfo = GetLoginInfo(c)
@@ -145,7 +145,7 @@ func Save{{.StructName}}(c echo.Context) error {
 	idStr := c.FormValue("id")
 	isEditFlag := false
 	if idStr != "" {
-		if err := global.DB.First(&{{.SingName}},  idStr).Error; err != nil {
+		if err := global.DB.First(&{{.SingName}},"id=?",  idStr).Error; err != nil {
 			global.Log.Error(err.Error())
 			return utils.ErrorNull(c, utils.GetDataNullResult)
 		}
@@ -159,6 +159,8 @@ func Save{{.StructName}}(c echo.Context) error {
 		{{if .IDPrimaryKeyInt }}{{.SingName}}.ID = utils.ID(){{else}}{{.SingName}}.ID = utils.IDString(){{end}}
 	}
 
+    {{if .FieldsMap.created_by }}
+	{{$.SingName}}.CreatedBy = loginInfo.ID{{end}}
     {{if .FieldsMap.updated_by }}
 	{{$.SingName}}.UpdatedBy = loginInfo.ID{{end}}
 

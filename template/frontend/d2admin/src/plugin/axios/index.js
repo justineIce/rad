@@ -68,6 +68,10 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
     response => {
+        if (util.loading) {
+            util.loading.close()
+            util.loading = null
+        }
         // dataAxios 是 axios 返回数据中的 data
         const dataAxios = response.data
         // 这个状态码是和后端约定的

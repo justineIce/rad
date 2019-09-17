@@ -31,7 +31,7 @@ import { codemirror } from 'vue-codemirror'
 import 'codemirror/lib/codemirror.css'
 
 // 核心插件
-Vue.use(d2Admin)
+Vue.use(d2Admin, { store })
 
 // 可选插件
 Vue.use(contentmenu)

@@ -11,7 +11,9 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/jinzhu/inflection"
 	"os"
+	"sort"
 	"strings"
+	"time"
 )
 
 var (
@@ -135,6 +137,7 @@ func generateBackend(curPath string) {
 			return
 		}
 	}
+	sort.Strings(tables)
 	if *sqlView != "" {
 		views = strings.Split(*sqlView, ",")
 	} else {
@@ -144,6 +147,7 @@ func generateBackend(curPath string) {
 			return
 		}
 	}
+	sort.Strings(views)
 	// 默认echo，复制框架模板
 	_, err = util.Copy(fmt.Sprintf("%s/template/backend/%s", curPath, *backend), targetPath, curPath+"/uncopy.txt")
 	if err != nil {
@@ -481,14 +485,17 @@ func executeFrontendD2admim(tables, views []string) {
 			viewInfo = viewsMap[modelInfo.TableView]
 		}
 		//api生成
-		routerPath = fmt.Sprintf(getTargetPath("manage-web/src/api/%s.js"), modelInfo.TableName)
+		routerPath = fmt.Sprintf(getTargetPath("manage-web/src/api/%s.js"), modelInfo.SingName)
 		util.ExecuteTemplateBase(api, routerPath, map[string]interface{}{"modelInfo": modelInfo}, func(i []byte) []byte {
 			str := string(i)
 			return []byte(strings.ReplaceAll(str, "`", ""))
 		})
 		//page生成
-		pagePath = fmt.Sprintf(getTargetPath("manage-web/src/pages/%s.vue"), modelInfo.TableName)
+		pagePath = fmt.Sprintf(getTargetPath("manage-web/src/pages/%s/index.vue"), modelInfo.SingName)
 		util.ExecuteTemplate(page, pagePath, map[string]interface{}{"modelInfo": modelInfo, "ViewInfo": viewInfo})
+		//生成数据库菜单
+		createSysMenu(fmt.Sprintf("%sIndex", modelInfo.SingName), modelInfo.TableRemark, fmt.Sprintf("/%s/index", modelInfo.SingName),
+			fmt.Sprintf("pages/%s/index", modelInfo.SingName), modelInfo.SingName)
 		// add router
 		tableList = append(tableList, modelInfo)
 	}
@@ -504,4 +511,78 @@ func executeFrontendD2admim(tables, views []string) {
 		str := string(i)
 		return []byte(strings.ReplaceAll(strings.ReplaceAll(str, "`", ""), "&", "`"))
 	})
+}
+
+// 创建系统菜单
+func createSysMenu(routeName, tableRemark, href, target, singName string) {
+	rows, err := Query("SELECT COUNT(1) AS c FROM sys_menu WHERE route_name=?", routeName)
+	if err != nil {
+		println(err.Error())
+		return
+	}
+	if len(rows) <= 0 {
+		return
+	}
+	count := rows[0]["c"].(int64)
+	if count == 0 {
+		id := dbmeta.IDString()
+		now := time.Now()
+		//新建路由
+		_, err = DB.Exec("INSERT INTO `sys_menu`(`id`, `parent_id`, `relation_ids`, `name`, `sort`, `href`, `target`, `icon`,"+
+			" `route_name`, `created_by`, `created_at`, `updated_by`, `updated_at`, `remarks`, `deleted_at`, `component`) "+
+			"VALUES (?, '2000', ?, ?, 0.00, ?, ?, 'fa fa-th-list', ?, '1',?, '1', ?, NULL, NULL, ?);",
+			id, fmt.Sprintf("-0-2000-%s-", id), tableRemark, href, target, routeName, now, now, fmt.Sprintf("Business_%sIndex", singName))
+		if err != nil {
+			println(err.Error())
+		}
+	}
+}
+
+func Query(sqlStr string, val ...interface{}) (list []map[string]interface{}, err error) {
+	var rows *sql.Rows
+	rows, err = DB.Query(sqlStr, val...)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+	var columns []string
+	columns, err = rows.Columns()
+	if err != nil {
+		return
+	}
+	values := make([]interface{}, len(columns))
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		scanArgs[i] = &values[i]
+	}
+	// 这里需要初始化为空数组，否则在查询结果为空的时候，返回的会是一个未初始化的指针
+	for rows.Next() {
+		err = rows.Scan(scanArgs...)
+		if err != nil {
+			return
+		}
+
+		ret := make(map[string]interface{})
+		for i, col := range values {
+			if col == nil {
+				ret[columns[i]] = nil
+			} else {
+				switch val := (*scanArgs[i].(*interface{})).(type) {
+				case []byte:
+					ret[columns[i]] = string(val)
+					break
+				case time.Time:
+					ret[columns[i]] = val.Format("2006-01-02 15:04:05")
+					break
+				default:
+					ret[columns[i]] = val
+				}
+			}
+		}
+		list = append(list, ret)
+	}
+	if err = rows.Err(); err != nil {
+		return
+	}
+	return
 }

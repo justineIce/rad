@@ -26,12 +26,18 @@ func ParseConfig(path string) (*Config, error) {
 
 // Config 配置参数
 type Config struct {
+	Project    Project    `toml:"project"`
 	Log        Log        `toml:"log"`
 	Gorm       Gorm       `toml:"gorm"`
 	MySQL      MySQL      `toml:"mysql"`
 	HTTP       HTTP       `toml:"http"`
 	Redis      Redis      `toml:"redis"`
 	FileUpload FileUpload `toml:"fileUpload"`
+}
+
+// Project 项目
+type Project struct {
+	Name string `toml:"name"`
 }
 
 // HTTP http配置参数

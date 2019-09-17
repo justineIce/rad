@@ -26,8 +26,8 @@
                     </jus-tree>
                 </div>
                 <div class="border_"></div>
-                <div class="add_" @click="SaveMenu" v-if="canAdd">
-                    <span class="el-icon-plus pad"> 添加新菜单 {{canAdd}}</span>
+                <div class="add_" @click="SaveMenu" >
+                    <span class="el-icon-plus pad"> 添加新菜单</span>
                 </div>
             </template>
 
@@ -82,6 +82,12 @@
                                     <el-form-item label="目标地址：" prop="Target">
                                         <el-input v-model="menuForm1.Target"></el-input>
                                     </el-form-item>
+                                    <el-form-item label="路由名称：" prop="RouteName">
+                                        <el-input v-model="menuForm1.RouteName"></el-input>
+                                    </el-form-item>
+                                    <el-form-item label="页面组件：" prop="Component">
+                                        <el-input v-model="menuForm1.Component"></el-input>
+                                    </el-form-item>
                                     <el-form-item label="排序号：">
                                         <el-input placeholder="用于主菜单排序" v-model="menuForm1.Sort"></el-input>
                                     </el-form-item>
@@ -135,6 +141,12 @@
                     </el-form-item>
                     <el-form-item label="目标地址：" prop="Target">
                         <el-input v-model="menuForm.Target"></el-input>
+                    </el-form-item>
+                    <el-form-item label="路由名称：" prop="RouteName">
+                        <el-input v-model="menuForm.RouteName"></el-input>
+                    </el-form-item>
+                    <el-form-item label="页面组件：" prop="Component">
+                        <el-input v-model="menuForm.Component"></el-input>
                     </el-form-item>
                     <el-form-item label="排序号：">
                         <el-input placeholder="用于主菜单排序" v-model="menuForm.Sort"></el-input>
@@ -220,7 +232,6 @@
         name: 'resourceMange',
         data() {
             return {
-                canAdd: this.hasPermissions(["p_menu_edit"]),
                 // 顶级菜单
                 menuOption: [],
                 props: {
@@ -240,6 +251,8 @@
                     Href: '',
                     Target: '',
                     Remarks: '',
+                    RouteName: '',
+                    Component: '',
                     Sort: '0'
                 },
                 // 资源类型
@@ -248,6 +261,7 @@
                 ],
                 menuFormRules: {
                     Name: [{required: true, message: '请输入菜单名称', trigger: 'blur'}],
+                    RouteName: [{required: true, message: '请输入路由名称', trigger: 'blur'}],
                     Href: [{required: true, message: '请输入资源路径', trigger: 'blur'}]
                 },
                 // 根据左侧菜单选择生成
@@ -265,10 +279,13 @@
                     Href: '',
                     Target: '',
                     Remarks: '',
+                    RouteName: '',
+                    Component: '',
                     Sort: '0'
                 },
                 menuForm1Rules: {
                     Name: [{required: true, message: '请输入名称', trigger: 'blur'}],
+                    RouteName: [{required: true, message: '请输入路由名称', trigger: 'blur'}],
                     Icon: [{required: true, message: '请输入图标', trigger: 'blur'}],
                     Href: [{required: true, message: '请输入资源路径', trigger: 'blur'}],
                     Target: [{required: true, message: '请输入目标地址', trigger: 'blur'}]
@@ -355,6 +372,8 @@
                     Name: data.Name,
                     Remarks: data.Remarks,
                     Target: data.Target,
+                    RouteName: data.RouteName,
+                    Component: data.Component,
                     Sort: data.Sort
                 }
             },
@@ -397,6 +416,8 @@
                     Target: data.Target,
                     Icon: data.Icon,
                     Sort: data.Sort,
+                    RouteName: data.RouteName,
+                    Component: data.Component,
                     Method: data.Method,
                     Remarks: data.Remarks
                 }
@@ -415,6 +436,8 @@
                     Icon: '',
                     Name: '',
                     Remarks: '',
+                    RouteName: '',
+                    Component: '',
                     Href: '',
                     Target: '',
                     Sort: '0'
@@ -431,6 +454,8 @@
                     Icon: '',
                     Name: '',
                     Remarks: '',
+                    RouteName: '',
+                    Component: '',
                     Href: '',
                     Target: '',
                     Sort: '0'
@@ -471,6 +496,8 @@
                     Target: data.Target,
                     Method: data.Method,
                     Remarks: data.Remarks,
+                    RouteName: data.RouteName,
+                    Component: data.Component,
                     Sort: data.Sort
                 }
                 this.operateLimit.SysMenuId = data.ID
@@ -630,6 +657,8 @@
                                     Target: firtMenu.Target,
                                     Method: firtMenu.Method,
                                     Remarks: firtMenu.Remarks,
+                                    RouteName: firtMenu.RouteName,
+                                    Component: firtMenu.Component,
                                     Sort: firtMenu.Sort
                                 }
                                 if (firtMenu.Method > 0) {

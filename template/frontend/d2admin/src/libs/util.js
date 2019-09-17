@@ -9,6 +9,8 @@ const util = {
     log
 }
 
+const loading = null
+
 /**
  * @description 更新标题
  * @param {String} title 标题

@@ -21,9 +21,10 @@
     </d2-container>
 </template>
 <script>
-import { Get{{.modelInfo.StructName}}Page{{if or .modelInfo.TableHandle.insert .modelInfo.TableHandle.update}}, Save{{.modelInfo.StructName}}{{end}}{{if .modelInfo.TableHandle.delete}}, Del{{.modelInfo.StructName}}{{end}} } from '@/api/{{.modelInfo.TableName}}'
+import util from '@/libs/util'
+import { Get{{.modelInfo.StructName}}Page{{if or .modelInfo.TableHandle.insert .modelInfo.TableHandle.update}}, Save{{.modelInfo.StructName}}{{end}}{{if .modelInfo.TableHandle.delete}}, Del{{.modelInfo.StructName}}{{end}} } from '@/api/{{.modelInfo.SingName}}'
 export default {
-  name: '{{.modelInfo.SingName}}',
+  name: '{{.modelInfo.SingName}}Index',
   data () {
     return {
       column: [
@@ -124,13 +125,21 @@ export default {
        * @param done
        */
     handleRowAdd (data, done) {
+      // 加载loading
+      util.loading = this.$loading({
+        lock: true,
+        text: '保存中...',
+        background: 'rgba(0, 0, 0, 0.7)'
+      })
       Save{{.modelInfo.StructName}}({
         ID: data.ID,{{ range .modelInfo.Columns }}{{if and (not (eq .ColumnName "id")) (not (eq .ColumnName "created_at")) (not (eq .ColumnName "created_by")) (not (eq .ColumnName "updated_by")) (not (eq .ColumnName "updated_at")) (not (eq .ColumnName "deleted_at"))}}
-        {{.StructName}}: data.row.{{.StructName}},{{end}}{{end}}
+        {{.StructName}}: data.{{.StructName}},{{end}}{{end}}
       }).then((result) => {
-        this.$message({ message: '添加成功', type: 'success' })
-        done(false)
-        this.getListData()
+           if (result.ret === 200) {
+                this.$message({ message: '添加成功', type: 'success' })
+                done(false)
+                this.getListData()
+            }
       })
     },
     handleRowRemove (data, done) {

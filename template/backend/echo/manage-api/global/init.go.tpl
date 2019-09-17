@@ -46,7 +46,7 @@ func InitGlobal(confPath *ConfPath) (err error) {
 		return
 	}
 	//初始化redis
-	RD, err = config.InitRedis(Conf.Redis, "rad-d2")
+	RD, err = config.InitRedis(Conf.Redis, Conf.Project.Name)
 	if err != nil {
 		err = errors.New(fmt.Sprintf("初始化Redis数据库失败，error：%s", err.Error()))
 		return
