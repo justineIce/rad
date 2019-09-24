@@ -492,7 +492,10 @@ func executeFrontendD2admim(tables, views []string) {
 		})
 		//page生成
 		pagePath = fmt.Sprintf(getTargetPath("manage-web/src/pages/%s/index.vue"), modelInfo.SingName)
-		util.ExecuteTemplate(page, pagePath, map[string]interface{}{"modelInfo": modelInfo, "ViewInfo": viewInfo})
+		util.ExecuteTemplateBase(page, pagePath, map[string]interface{}{"modelInfo": modelInfo, "ViewInfo": viewInfo}, func(i []byte) []byte {
+			str := string(i)
+			return []byte(strings.ReplaceAll(str, "`", ""))
+		})
 		//生成数据库菜单
 		createSysMenu(fmt.Sprintf("%sIndex", modelInfo.SingName), modelInfo.TableRemark, fmt.Sprintf("/%s/index", modelInfo.SingName),
 			fmt.Sprintf("pages/%s/index", modelInfo.SingName), modelInfo.SingName)

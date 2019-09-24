@@ -2,7 +2,8 @@
     <d2-container class="meta-public">
         <JusLayout title="{{.modelInfo.TableRemark}}">
             <JusTable :columns="column"
-                      :data="data"
+                      :data="data.data"
+                      :pagination="{total:data.totalCount}"
                       {{if .modelInfo.TableHandle.select}}@query-data="handleQueryData"{{end}}
                      {{if or .modelInfo.TableHandle.insert .modelInfo.TableHandle.update}}addMode{{end}}
                       {{if .modelInfo.TableHandle.insert}}addTitle="添加{{.modelInfo.TableRemark}}"
@@ -12,9 +13,9 @@
                       :editTemplate="addTemplate"
                       :editRules="rules"{{end}}
                       {{if or .modelInfo.TableHandle.update .modelInfo.TableHandle.delete }}:rowHandle="rowHandle"{{end}}
-                      {{if .modelInfo.TableHandle.insert}}@row-add="handleRowAdd"{{end}}
+                      {{if .modelInfo.TableHandle.insert}}@row-add="handleRowSave"{{end}}
                       {{if .modelInfo.TableHandle.delete}}@row-remove="handleRowRemove"{{end}}
-                      {{if .modelInfo.TableHandle.update}}@row-edit="handleRowEdit"{{end}}
+                      {{if .modelInfo.TableHandle.update}}@row-edit="handleRowSave"{{end}}
                       />
         </JusLayout>
 
@@ -105,9 +106,15 @@ export default {
        * @param data
        */
     getListData (data) {
+      // 加载loading
+      util.loading = this.$loading({
+        lock: true,
+        text: '保存中...',
+        background: 'rgba(0, 0, 0, 0.7)'
+      })
       Get{{.modelInfo.StructName}}Page(data).then((result) => {
            if (result.ret === 200) {
-                this.data = result.data.data
+                this.data = result.data
            }
       })
     },
@@ -117,46 +124,50 @@ export default {
        * @param pagination
        */
     handleQueryData (data, pagination) {
-      this.getListData(this.$objectAssign(data, pagination))
-    },
-    /**
-       * 添加数据
-       * @param data
-       * @param done
-       */
-    handleRowAdd (data, done) {
       // 加载loading
       util.loading = this.$loading({
         lock: true,
         text: '保存中...',
         background: 'rgba(0, 0, 0, 0.7)'
       })
+      this.getListData(this.$objectAssign(data, pagination))
+    },
+    handleRowRemove (data, done) {
+      // 加载loading
+      util.loading = this.$loading({
+        lock: true,
+        text: '保存中...',
+        background: 'rgba(0, 0, 0, 0.7)'
+      })
+      Del{{.modelInfo.StructName}}({ id: data.row.ID }).then((result) => {
+        if (result.ret === 200) {
+            this.$message({ message: '删除成功', type: 'success' })
+            done(false)
+            this.getListData()
+        }
+      })
+    },
+    handleRowSave (data, done) {
+      // 加载loading
+      util.loading = this.$loading({
+        lock: true,
+        text: '保存中...',
+        background: 'rgba(0, 0, 0, 0.7)'
+      })
+      var isAdd=true
+      if (data.row){
+        data=data.row
+        isAdd=false
+      }
       Save{{.modelInfo.StructName}}({
         ID: data.ID,{{ range .modelInfo.Columns }}{{if and (not (eq .ColumnName "id")) (not (eq .ColumnName "created_at")) (not (eq .ColumnName "created_by")) (not (eq .ColumnName "updated_by")) (not (eq .ColumnName "updated_at")) (not (eq .ColumnName "deleted_at"))}}
         {{.StructName}}: data.{{.StructName}},{{end}}{{end}}
       }).then((result) => {
-           if (result.ret === 200) {
-                this.$message({ message: '添加成功', type: 'success' })
-                done(false)
-                this.getListData()
-            }
-      })
-    },
-    handleRowRemove (data, done) {
-      Del{{.modelInfo.StructName}}({ id: data.row.ID }).then((result) => {
-        this.$message({ message: '删除成功', type: 'success' })
-        done(false)
-        this.getListData()
-      })
-    },
-    handleRowEdit (data, done) {
-      Save{{.modelInfo.StructName}}({
-        ID: data.row.ID,{{ range .modelInfo.Columns }}{{if and (not (eq .ColumnName "id")) (not (eq .ColumnName "created_at")) (not (eq .ColumnName "created_by")) (not (eq .ColumnName "updated_by")) (not (eq .ColumnName "updated_at")) (not (eq .ColumnName "deleted_at"))}}
-        {{.StructName}}: data.row.{{.StructName}},{{end}}{{end}}
-      }).then((result) => {
-        this.$message({ message: '修改成功', type: 'success' })
-        done(false)
-        this.getListData()
+        if (result.ret === 200) {
+            this.$message({ message: isAdd?'添加成功':'修改成功', type: 'success' })
+            done(false)
+            this.getListData()
+        }
       })
     }
   },

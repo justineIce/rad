@@ -1,6 +1,7 @@
 package dbmeta
 
 import (
+	"github.com/jinzhu/inflection"
 	"reflect"
 	"regexp"
 	"strings"
@@ -73,4 +74,8 @@ func TestRegexpStr(t *testing.T) {
 			t.Log(params)
 		}
 	}
+}
+
+func TestIDStr(t *testing.T) {
+	t.Log(inflection.Singular(FmtFieldName("id")))
 }

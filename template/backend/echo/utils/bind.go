@@ -183,7 +183,8 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		//时间类型
 		switch fieldType {
 		case "time.Time", "*time.Time":
-			t, err := dateparse.ParseAny(val)
+			local, _ := time.LoadLocation("Local")
+			t, err := dateparse.ParseIn(val, local)
 			if err != nil {
 				panic(err)
 			} else {
@@ -232,7 +233,8 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 			break
 		case "null.Time":
 			if val != "" {
-				t, err := dateparse.ParseAny(val)
+				local, _ := time.LoadLocation("Local")
+				t, err := dateparse.ParseIn(val, local)
 				if err != nil {
 					return err
 				}
