@@ -120,6 +120,10 @@ service.interceptors.response.use(
         }
     },
     error => {
+        if (util.loading) {
+            util.loading.close()
+            util.loading = null
+        }
         if (error && error.response) {
             switch (error.response.status) {
                 case 400:
