@@ -3,7 +3,7 @@
         <JusLayout title="{{.modelInfo.TableRemark}}">
             <JusTable :columns="column"
                       :data="data.data"
-                      :pagination="{total:data.totalCount}"
+                      :pagination="{total:data.totalCount,currentPage: data.pageNo}"
                       {{if .modelInfo.TableHandle.select}}@query-data="handleQueryData"{{end}}
                      {{if or .modelInfo.TableHandle.insert .modelInfo.TableHandle.update}}addMode{{end}}
                       {{if .modelInfo.TableHandle.insert}}addTitle="添加{{.modelInfo.TableRemark}}"
