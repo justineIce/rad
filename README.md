@@ -24,3 +24,19 @@
  ````
  > go run main.go --package "github.com/devopsmi/rad/example" --dbHost 192.168.2.140 --dbName daas --dbUser cox --dbPassword "tqojg&WIGggN89bm"  --json --gorm --guregu
  ````
+
+# 版本分支
+* master 主分支
+* rad-cmd 命令行版
+* rad-ui 界面版
+#### 查看当前分支
+> git branch -v
+#### 创建分支
+> git branch <分支名>
+#### 切换分支
+> git checkout <分支名>
+#### 提交分支分支
+> git push --set-upstream origin ResearchAssistant
+> git add .
+> git commit -m "提交备注"
+> git push
