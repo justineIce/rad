@@ -65,7 +65,7 @@ func Get{{.StructName}}Page(c echo.Context) error {
                 {{- end -}}
             }else{
                 //普通账号 - 仅能看自己的数据
-                db = db.Where("created_by", loginInfo.ID)
+                db = db.Where("created_by=?", loginInfo.ID)
             }
     	}
     	{{end}}
@@ -108,7 +108,7 @@ func Get{{.StructName}}Page(c echo.Context) error {
             {{- end -}}
 		} else {
 			//普通账号 - 仅能看自己的数据
-			db = db.Where("created_by", loginInfo.ID)
+			db = db.Where("created_by=?", loginInfo.ID)
 		}
 	}
 	{{end}}

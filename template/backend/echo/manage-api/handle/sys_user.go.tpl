@@ -51,7 +51,7 @@ func GetSysUserPage(c echo.Context) error { //视图查询
 			db = db.Where("relation_ids LIKE ?", loginInfo.OfficeRelationIds+"%")
 		} else {
 			//普通账号 - 仅能看自己的数据
-			db = db.Where("created_by", loginInfo.ID)
+			db = db.Where("created_by=?", loginInfo.ID)
 		}
 	}
 
@@ -133,7 +133,6 @@ func SaveSysUser(c echo.Context) error {
 		sysUser.ID = utils.IDString()
 		sysUser.CreatedBy = loginInfo.ID
 		sysUser.CompanyID = loginInfo.CompanyId
-		sysUser.OfficeID = loginInfo.OfficeId
 		sysUser.LoginFlag = enum.LoginableFlag
 	}
 	pwd := c.FormValue("password")
